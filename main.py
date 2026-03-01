@@ -1,8 +1,5 @@
-import subprocess
+#!/usr/bin/env python3
 
-import ssl
-from pyVmomi import vim
-from pyVim.connect import SmartConnect, Disconnect
 from utils.deploy_sbce_esxi_ova import deploy_sbce
 from utils.init_setup_esxi import init_setup
 import time
