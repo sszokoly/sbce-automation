@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+import os
 import ssl
+import time
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim
-import time
+from dotenv import load_dotenv
+load_dotenv()
 
 # ---------------------------------------------------------------------------
 # ESXi 7.0.3 PutUsbScanCodes confirmed working encoding:
@@ -343,8 +346,8 @@ class VMKeyboard:
 
 def init_setup():
     vcenter  = "192.168.200.161"
-    user     = "root"
-    password = "cmb@Dm1n"
+    user     = os.getenv("USER", "root")
+    password = os.getenv("PASSWD", "root01")
     vm_name  = "SBCE-VM"
 
     ctx = ssl._create_unverified_context()
@@ -359,9 +362,10 @@ def init_setup():
         # --- SBCE first boot wizard example ---
         # Adjust timing and inputs to match your wizard screens
 
+        print("Setting first boot parameters via VM keyboard automation...")
         # Choice 1
         kb.type_line("1")
-        time.sleep(10)
+        time.sleep(6)
         
         # DUAL_STACK
         kb.type_line("")
@@ -425,7 +429,7 @@ def init_setup():
         
         # Enter 'Y' if the above information is correct
         kb.type_line("Y")
-        time.sleep(5)
+        time.sleep(3)
         
         # First and last name
         kb.type_line("sbce.lab.local")
@@ -469,7 +473,7 @@ def init_setup():
         
         # Is the above information OK?
         kb.type_line("1")
-        time.sleep(15)
+        time.sleep(20)
         
         # Proceed further keeping same NTP IP
         kb.type_line("3")
@@ -495,8 +499,6 @@ def init_setup():
 
     finally:
         Disconnect(si)
-
-
 
 if __name__ == "__main__":
     init_setup()

@@ -9,7 +9,8 @@ import time
 
 def main():
     deploy_sbce()
-    time.sleep(160)  # Wait for the VM to be fully deployed and powered on
+    print("Waiting for the VM to be fully deployed and powered on...")
+    time.sleep(160)
     init_setup()
 
 if __name__ == "__main__":

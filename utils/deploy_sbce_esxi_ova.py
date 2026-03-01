@@ -1,8 +1,15 @@
+import os
 import ssl
+import time
 import subprocess
 from pyVmomi import vim
 from pyVim.connect import SmartConnect, Disconnect
-import time
+from dotenv import load_dotenv
+load_dotenv()
+
+USER = os.getenv("USER")
+PASSWD = vcenter  = os.getenv("PASSWD")
+
 
 def connect_vsphere(host, user, password, insecure=True):
     ctx = ssl._create_unverified_context() if insecure else None
@@ -93,7 +100,7 @@ def power_on_vm(si, vm_name):
 
 
 def deploy_sbce():
-    command = '''
+    command = f'''
     ovftool \
     --acceptAllEulas \
     --noSSLVerify \
@@ -123,7 +130,7 @@ def deploy_sbce():
     --prop:ssh_port_number="222" \
     --prop:vmname="SBCE" \
     /root/Projects/sbce-automation/data/ova/sbce-10.2.0.0-86-24077-1.ova \
-    "vi://root:cmb@Dm1n@192.168.200.161/"'''
+    "vi://{USER}:{PASSWD}@192.168.200.161/"'''
 
     completed_proc= subprocess.run(command, shell=True, check=True)
     if completed_proc.returncode == 0:
