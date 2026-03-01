@@ -1,0 +1,10 @@
+---
+- name: Read "{{ sbce_config }}"
+  community.general.read_csv:
+    path: "{{ sbce_config }}"
+  register: sbce_config_csv
+
+- name: Flatten CSV list into a dictionary
+  set_fact:
+    args: "{{ sbce_config_csv.list | items2dict(key_name='name', value_name='value') }}"
+...

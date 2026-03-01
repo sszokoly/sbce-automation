@@ -127,8 +127,6 @@ def deploy_sbce():
     --prop:rootpass="r00t10_cmb@Dm1n" \
     --prop:ipcspass="sbc10_cmb@Dm1n" \
     --prop:grubpass="r00t10_cmb@Dm1n" \
-    --prop:ssh_port_number="222" \
-    --prop:vmname="SBCE" \
     /root/Projects/sbce-automation/data/ova/sbce-10.2.0.0-86-24077-1.ova \
     "vi://{USER}:{PASSWD}@192.168.200.161/"'''
 

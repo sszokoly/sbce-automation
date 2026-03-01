@@ -412,7 +412,7 @@ def init_setup():
         time.sleep(2)
         
         # NTP server IP address (ipv4)
-        kb.type_line("10.10.48.92")
+        kb.type_line("")
         time.sleep(2)
         
         # NTP server IP address (ipv6)

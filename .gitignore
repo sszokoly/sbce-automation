@@ -205,7 +205,18 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Mine
+.gitignore
+ansible.cfg
 uv.lock
 data/ova/*.ova
 data/ovf/*.ovf
 data/utils/.env
+inventories/prod/*.yaml
+inventories/prod/*.yml
+inventories/lab/*.yaml
+inventories/lab/*.yml
+inventories/lab/hosts.yml
+inventories/lab/*
+facts_cache/*
