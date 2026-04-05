@@ -1,7 +1,10 @@
 name,value,description
 host_type,ESXi,Host type [KVM/ESXi]
 host_address,192.168.200.161,Host IP address or FQDN
+host_username,root,User name of Host
+host_password,cmb@Dm1n,User password of Host
 datastore,datastore1,Datastore Name
+ovf,/root/Projects/sbce-automation/data/ova/sbce-10.2.0.0-86-24077-1.ova,Path to OVA
 vmname,SBCE-VM,VM name
 ipmode,DUAL_STACK,IP Mode: - IP Mode for Device [IPV4/DUAL_STACK]
 hostname,sbcems,"Hostname: (*) - Hostname of Device. (Hostname may only contain letters, numbers, and hyphens. May not begin or end with hyphens.)"
@@ -31,11 +34,11 @@ emsip_v6,,(Optional)EMS IPv6 Address: - IPv6 address for the EMS System.
 rootpass,r00t10_cmb@Dm1n,Root Password (*) - root password for Device.
 ipcspass,sbc10_cmb@Dm1n,Ipcs Password: (*) - ipcs password for Device.
 grubpass,r00t10_cmb@Dm1n,Grub password: (*) - grub password for Device.
-net_M1,VLAN48,M1 NIC Port-group name
-net_M2,Duplication,M2 NIC Port-group name
-net_A1,VLAN48,A1 NIC Port-group name
-net_A2,VLAN48,A2 NIC Port-group name
-net_B1,VLAN32,B1 NIC Port-group name
-net_B2,VLAN32,B2 NIC Port-group name
+M1,VLAN48,M1 NIC Port-group name
+M2,Duplication,M2 NIC Port-group name
+A1,VLAN48,A1 NIC Port-group name
+A2,VLAN48,A2 NIC Port-group name
+B1,VLAN32,B1 NIC Port-group name
+B2,VLAN32,B2 NIC Port-group name
 ha_peer_node,,HA Peer SBCE name
 ha_peer_ip,,HA Peer SBCE IP
