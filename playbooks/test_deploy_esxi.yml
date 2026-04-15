@@ -1,0 +1,645 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: "Deploy SBCE OVA"
+      community.vmware.vmware_deploy_ovf:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        datastore: "datastore1"
+        name: "SBCE-VM"
+        ovf: "/home/sszokoly/Projects/sbce-automation/data/ova/sbce-10.2.0.0-86-24077-1.ova"
+        networks:
+          "M1": "VLAN48"
+          "B1": "VLAN32"
+          "A2": "VLAN48"
+          "B2": "VLAN32"
+          "A1": "VLAN48"
+          "M2": "Duplication"
+        power_on: false
+        wait_for_ip_address: false
+        validate_certs: false
+
+    - name: Add missing NICs to SBCE VM
+      community.vmware.vmware_guest_network:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        network_name: "{{ item }}"
+        state: present
+        validate_certs: false
+        force: true
+      loop:
+        - "VLAN32"      # B1
+        - "VLAN48"      # A2
+        - "VLAN32"      # B2
+        - "VLAN48"      # A1
+        - "Duplication" # M2
+
+    - name: Set the state of a virtual machine to powerned-on
+      community.vmware.vmware_guest_powerstate:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        state: powered-on
+        validate_certs: false
+
+    - name: Wait 180 seconds for initialization to complete
+      ansible.builtin.pause:
+        seconds: 180
+
+    - name: Send "1" to configure command line mode
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "1"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 10
+        validate_certs: false
+
+    - name: Send ipmode - "DUAL_STACK"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "DUAL_STACK"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send apptype - "EMS+SBCE"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "EMS+SBCE"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send appname - "SBCE-VM"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "SBCE-VM"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ip0 - "10.10.48.180"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "10.10.48.180"
+        validate_certs: false
+    
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send netmask0 - "255.255.255.0"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "255.255.255.0"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send gateway - "255.255.255.0"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "10.10.48.254"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ipv6address0 ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ipv6prefix0 ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ipv6gateway ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ntpservers ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ntpipv6 ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send dns - "10.10.48.92,10.10.32.92"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "10.10.48.92,10.10.32.92"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send domain_suffix - "10.10.48.92,10.10.32.92"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "surreyschools.ca"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send 'Y' ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send first_last_name - "sbce-vm@surreyschools.ca"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "sbce-vm@surreyschools.ca"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send organizational_unit - "IT"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "IT"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send organization - "SD36"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "SD36"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send locality - "Surrey"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "Surrey"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send state_province - "BC"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "BC"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send country - "CA"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "CA"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send 'Y' ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send '11' for none for continent
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "11"
+        validate_certs: false
+
+    - name: Send 'Y' ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send 'GST-7' for timezone
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "GST-7"
+        validate_certs: false
+
+    - name: Send 'Y' ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send '1' to confirm timezone
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "1"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 10
+        validate_certs: false
+
+    - name: Send rootpass - "cmb@Dm1n"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "cmb@Dm1n"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send rootpass again - "cmb@Dm1n"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "cmb@Dm1n"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ipcspass - "cmb@Dm1n"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "cmb@Dm1n"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send ipcspass again - "cmb@Dm1n"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "cmb@Dm1n"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send grubpass - "cmb@Dm1n"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "cmb@Dm1n"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Send grubpass again - "cmb@Dm1n"
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        string_send: "cmb@Dm1n"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        hostname: "192.168.200.161"
+        username: "root"
+        password: "cmb@Dm1n"
+        name: "SBCE-VM"
+        keys_send:
+          - ENTER
+        sleep_time: 3
+        validate_certs: false
+
+    - name: Wait for 180 seconds for the SBCE to come up
+      ansible.builtin.pause:
+        seconds: 180
+
+    - name: Add SBCE to in-memory inventory
+      ansible.builtin.add_host:
+        hostname: sbce-vm
+        ansible_host: 10.10.48.180
+        ansible_user: ipcs
+        ansible_password: cmb@Dm1n
+        ansible_become_user: root
+        ansible_become_password: cmb@Dm1n
+        ansible_become_method: su
+        ansible_port: 22
+
+- hosts: sbce-vm
+  gather_facts: false
+
+  tasks:
+    - name: ping
+      ansible.builtin.ping:
+  
+    - name: Set NTP server
+      ansible.builtin.command: sbceconfigurator.py change-ntp-ip 127.127.1.0 10.10.48.250
+      become: true
+    
+    - name: Turn off password aging
+      ansible.builtin.command: chage -E -1 -m 0 -M 99999 ipcs
+      become: true
+
+    - name: Set ucsec password
+      ansible.builtin.command: gui-user -e ucsec -p cmb@Dm1n
+      become: true
+...
