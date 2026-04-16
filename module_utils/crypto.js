@@ -88,20 +88,20 @@ async function generateLoginPayload(username, password, publicKeyPem) {
 // Example
 (async () => {
   const publicKeyPem = `-----BEGIN PUBLIC KEY-----
-MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqwhoFjzZZWTAUIeWz6lW
-cPJvyOqy2AzRuEdIXJCZZWG0Z/c73OZ+NugJYhEX9vWtKf7iX+wwPArd/6u7qU2v
-CDr8kqQ0iLkQ1v/kGIQKoXqsRdQCEmWJtkZvhbqtce5cmAyP4UAQgxvSYPuf748L
-5BNzOe3GefDdXj74O18I/6IGZx/2XeEGN3gHZIF6IdhFx4ee0OpqVEif3sG8BSsk
-yEIb0Or98mMQiMUfat0VF40wqsjWgUu4mj6kdvpUX/NOhsJ9DKtxOuuRDocegCaH
-m23Qfg/xB/pZKClAMD1L3MNkYenfjUpGDE+wMMjH3+SU8QrgZZolPf3lznDjSjSW
-eg6iD6f79pzcO2Tp0PgS0mikJ8sDhfGzyvcCiGiYr/iGaUOgPnIQ6gjSXcoqwXDS
-Qb3Er1wVq3J8SPErwiE828ea8CyzRx1o2SS290GRI3Wv77C5gz8IXUNcZ5vFWfw8
-DTyIBT8fhJnSNvYvKiXcUlPkk5J1JkUPuZPcUVR14HIR0rzALehNF/DP30wbEg7U
-OMWhoHOKMmeOjjvZi2Wuc1eFq0CHMx/dHisAwk86iz88UPZYYxPioePRm3gdNAqE
-Tn/WmXQWAUn7PeG9/PmzCgkPc/9FqoTBnaJcQZVmu7gl+h+LemMVI/q5Z1BfQW14
-wI2QkyErR7DAc1hD7uLBRVUCAwEAAQ==
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAjePYky5yP0m\/eC+borYT
+v7XgFYeOMxCqunkV3aW05adB5HQPlSC6tjJF2kJMoONYPUv\/UYU1YAEAXbHua5bn
+8w8k3SUlcQI+aenew1RxO6Pa4Q065vfZ+akg\/HlF5cQQ37crTjeDpiTHCQ0zYo39
+3fg6cZCbgbaP8n91lbFg2wUVafwJE0Q48lc4Vvsh1evRG\/ym6kn1ngCqVsVYsaSs
+cenhKDqYIkQUHCy1j7vVecHw9CSe\/p3k5jBo0fAQ2xriA750+mm2m29Iak42YGgR
+yIRg7Vb1l0Lza2xZU85AyrJfqPGfgq+G2jnnUdffZJ04kROfSLW1Skw2NjzYU1dy
+yuAP6hCZyO8pazhKGbtWC+C3DWzQUTFF00BZ+FW4dKyBeDdzRj0yzfDpT25x3Ivw
+RbOzUDbgT\/3lHWhbU6E4T3IyAo\/Ac8JftffgK+pZJmbuoEoU064VBNCt725\/1IFx
+M6dwgGRYtmv6BoT4bpqe9ETLXhXpNzUqtcaIMyej7OKoSB5cgfJb6QP3MOgwysM\/
+0wwtA4K5RdgGCjjQtir\/mFB47t25LnpPdgmsj4ANVZSDP\/ZbehUrsfRf2+aAJkH\/
+5uU0+U7fnS7k3Z4kf7FfSJJZ4N2SA8SpYaed623pNTq+Tn3CfNM4uvuyiNo4HOu2
+9NdDcypdQRL8X63HwB6FY0UCAwEAAQ==
 -----END PUBLIC KEY-----`;
 
-  const payload = await generateLoginPayload("ucsec", "YourPasswordHere", publicKeyPem);
+  const payload = await generateLoginPayload("ucsec", "ucsec", publicKeyPem);
   console.log(payload);
 })();
