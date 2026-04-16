@@ -211,6 +211,7 @@ __marimo__/
 ansible.cfg
 uv.lock
 data/ova/*.ova
+data/ova/*.qcow2
 data/ovf/*.ovf
 data/utils/.env
 inventories/prod/*.yaml
