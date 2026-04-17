@@ -221,3 +221,4 @@ inventories/lab/*.yml
 inventories/lab/hosts.yml
 inventories/lab/*
 facts_cache/*
+launch.json
