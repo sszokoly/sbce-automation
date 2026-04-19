@@ -1,7 +1,7 @@
 import openpyxl
 
 
-def read_sbce_config_xlsx(input_file):
+def read_sbce_config(input_file):
     "Read the sbce_config.xlsx file and return content as Ansible facts"
 
     spreadsheet = {}
@@ -19,13 +19,13 @@ def read_sbce_config_xlsx(input_file):
             values = [cell.value for cell in column_B_cells]
             
             # Add sheet to 'sbce_config_sheets' dict
-            spreadsheet["sbce_config_sheets"] = {sheet: {k:v for k,v, in zip(keys, values)}}
+            spreadsheet[sheet] = {k:v for k,v, in zip(keys, values)}
     except IOError:
         return (1, "IOError on input file:%s" % input_file)
 
-    result = {"ansible_facts": spreadsheet}
+    result = {"ansible_facts": {"sbce_config_sheets": spreadsheet}}
     return (0, result)
 
 if __name__ == "__main__":
-    input_file =  "/home/derelict/Projects/sbce-automation/data/csv/sbce_config.xlsx"
-    print(read_sbce_config_xlsx(input_file))
+    input_file =  "/home/sszokoly/Projects/sbce-automation/data/csv/sbce_config.xlsx"
+    print(read_sbce_config(input_file))
