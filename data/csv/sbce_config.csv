@@ -18,6 +18,8 @@ gateway,10.10.48.254,Default gateway: (*) - The IPv4 gateway for the management 
 ipv6address0,,IPv6 Address: - (Optional) The IPv6 address for the management interface.
 ipv6prefix0,64,IPv6 Prefix: - (Optional) The IPv6 prefix for the management interface.
 ipv6gateway,,IPv6 Gateway: - (Optional) The IPv6 gateway for the management interface.
+ems_ip,,Primary EMS Mgmt IP address
+ems_ipv6,,Primary EMS Mgmt IPv6 address
 domain_suffix,avaya.local,Domain name
 first_last_name,sbcems.avaya.local,"CN name, usually hostname + domain_suffix (NOT FOR SBCE DEPLOYMENT)"
 organizational_unit,IT,Organizational Unit (NOT FOR SBCE DEPLOYMENT)
@@ -25,7 +27,7 @@ organization,LAB,Organization (NOT FOR SBCE DEPLOYMENT)
 locality,Calgary,City or Locality (NOT FOR SBCE DEPLOYMENT)
 state_province,AB,State or Province (NOT FOR SBCE DEPLOYMENT)
 country,CA,Country Code (2 letter code) (NOT FOR SBCE DEPLOYMENT)
-timezone,America/Denver,Time Zone - Time Zone in which device is located
+timezone,GMT+7,Time Zone - Time Zone in which device is located
 ntpservers,10.10.48.92,NTP Server Address: - The IPv4 address for NTP servers.
 ntpipv6,,NTP Server Address IPv6: - (For DUAL_STACK Mode Only) The IPv6 address for NTP server.
 dns,192.168.1.1,DNS Address: - The IPv4 address list for DNS servers.
@@ -34,11 +36,18 @@ emsip_v6,,(Optional)EMS IPv6 Address: - IPv6 address for the EMS System.
 rootpass,r00t10_cmb@Dm1n,Root Password (*) - root password for Device.
 ipcspass,sbc10_cmb@Dm1n,Ipcs Password: (*) - ipcs password for Device.
 grubpass,r00t10_cmb@Dm1n,Grub password: (*) - grub password for Device.
+ucsecpass,sbc10_cmb@Dm1n,Web ucsec account password
 M1,VLAN48,M1 NIC Port-group name
 M2,Duplication,M2 NIC Port-group name
-A1,VLAN48,A1 NIC Port-group name
-A2,VLAN48,A2 NIC Port-group name
-B1,VLAN32,B1 NIC Port-group name
-B2,VLAN32,B2 NIC Port-group name
+A1,VLAN48,A1 NIC Port-group / Bridge name
+A2,VLAN48,A2 NIC Port-group / Bridge name
+B1,VLAN32,B1 NIC Port-group / Bridge name
+B2,VLAN32,B2 NIC Port-group / Bridge name
 ha_peer_node,,HA Peer SBCE name
 ha_peer_ip,,HA Peer SBCE IP
+sig_iface,,"SIP data interace (A1, A2, B1, B2)"
+sig_name,,SIP data interface name
+sig_mask,,SIP data interface mask
+sig_gw,,SIP data interface gateway
+sig_ip,,SIP data interace IP address
+sig_pub_ip,,SIP data interace public IP address
