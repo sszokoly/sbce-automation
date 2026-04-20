@@ -1,0 +1,97 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: "Fail if 'src' file argument is not in --extra-vars"
+      ansible.builtin.fail:
+        msg: "'src' file argument is not in --extra-vars"
+      when: src is not defined
+
+    - name: Extract configuration from sbce_config.xlsx
+      read_sbce_config:
+        path: "/root/Projects/sbce-automation/sbce_config.xlsx"
+
+    - name: sbce_config
+      debug:
+        var: ansible_facts["sbce_config"]
+
+    - name: Create list of sheet names sorted by install order
+      vars:
+        flat_config: "{{ sbce_config | combine }}"
+        priority: ['EMS+SBCE', 'EMS', 'SBCE']
+      set_fact:
+        install_order: >-
+          {%- set results = [] -%}
+          {%- for type in priority -%}
+            {%- for key, val in flat_config.items() -%}
+              {%- if val.apptype == type -%}
+                {%- set _ = results.append(key) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {{ results }}
+
+    - name: flat_config
+      vars:
+        flat_config: "{{ sbce_config | combine }}"
+      debug:
+        var: flat_config
+
+    - name: Create dict of EMS and a list of their SBCE nodes
+      vars:
+        flat_config: "{{ sbce_config | combine }}"
+      set_fact:
+        ems_nodes: >-
+          {%- set ns = namespace(result={}, ems_map={}, ip_to_key={}, seen={}) -%}
+
+          {# Pass 1: Build lookup maps and seed EMS buckets #}
+          {%- for key, val in flat_config.items() -%}
+            {%- if val.ip0 -%}
+              {%- set _ = ns.ip_to_key.update({val.ip0: key}) -%}
+            {%- endif -%}
+            {%- if val.apptype in ['EMS', 'EMS+SBCE'] -%}
+              {%- set _ = ns.ems_map.update({val.ip0: key}) -%}
+              {%- set _ = ns.result.update({key: []}) -%}
+            {%- endif -%}
+          {%- endfor -%}
+
+          {# Pass 2: Bucket SBCEs under their EMS, pairing HA peers #}
+          {%- for key, val in flat_config.items() -%}
+            {%- if val.apptype == 'SBCE' and val.emsip in ns.ems_map and key not in ns.seen -%}
+              {%- set ems = ns.ems_map[val.emsip] -%}
+              {%- if val.ha_peer_ip and val.ha_peer_ip in ns.ip_to_key -%}
+                {%- set peer = ns.ip_to_key[val.ha_peer_ip] -%}
+                {%- set _ = ns.result[ems].append([key, peer]) -%}
+                {%- set _ = ns.seen.update({key: 1, peer: 1}) -%}
+              {%- else -%}
+                {%- set _ = ns.result[ems].append([key]) -%}
+                {%- set _ = ns.seen.update({key: 1}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+
+          {# Emit only EMS nodes that have at least one SBCE #}
+          {{ ns.result | dict2items | selectattr('value', '!=', []) | items2dict }}
+
+    # - name: "Deploy {{ args.ovf }}"
+    #   community.vmware.vmware_deploy_ovf:
+    #     hostname: "{{ args.host_address }}"
+    #     username: "{{ args.host_username }}"
+    #     password: "{{ args.host_password }}"
+    #     #datacenter: "ha-datacenter"
+    #     datastore: "{{ args.datastore }}"
+    #     name: "{{ args.vmname }}"
+    #     ovf: "{{ args.ovf }}"
+    #     networks:
+    #       "A1": "{{ args.A1 }}"
+    #       "A2": "{{ args.A2 }}"
+    #       "B1": "{{ args.B1 }}"
+    #       "B2": "{{ args.B2 }}"
+    #       "M1": "{{ args.M1 }}"
+    #       "M2": "{{ args.M2 }}"
+    #     power_on: false
+    #     wait_for_ip_address: false
+    #     validate_certs: false
+    #   delegate_to: localhost
+...

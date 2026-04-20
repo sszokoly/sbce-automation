@@ -71,6 +71,8 @@
           - ENTER
         sleep_time: 10
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ipmode - "DUAL_STACK"
       community.vmware.vmware_guest_sendkey:
@@ -91,7 +93,9 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
-
+      no_log: true
+      changed_when: false
+  
     - name: Send apptype - "EMS+SBCE"
       community.vmware.vmware_guest_sendkey:
         hostname: "192.168.200.161"
@@ -111,6 +115,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send appname - "SBCE-VM"
       community.vmware.vmware_guest_sendkey:
@@ -131,6 +137,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ip0 - "10.10.48.180"
       community.vmware.vmware_guest_sendkey:
@@ -151,6 +159,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send netmask0 - "255.255.255.0"
       community.vmware.vmware_guest_sendkey:
@@ -171,6 +181,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send gateway - "255.255.255.0"
       community.vmware.vmware_guest_sendkey:
@@ -191,6 +203,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ipv6address0 ENTER
       community.vmware.vmware_guest_sendkey:
@@ -202,6 +216,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ipv6prefix0 ENTER
       community.vmware.vmware_guest_sendkey:
@@ -213,6 +229,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ipv6gateway ENTER
       community.vmware.vmware_guest_sendkey:
@@ -224,6 +242,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ntpservers ENTER
       community.vmware.vmware_guest_sendkey:
@@ -235,6 +255,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ntpipv6 ENTER
       community.vmware.vmware_guest_sendkey:
@@ -266,6 +288,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send domain_suffix - "10.10.48.92,10.10.32.92"
       community.vmware.vmware_guest_sendkey:
@@ -286,6 +310,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send 'Y' ENTER
       community.vmware.vmware_guest_sendkey:
@@ -297,6 +323,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send first_last_name - "sbce-vm@surreyschools.ca"
       community.vmware.vmware_guest_sendkey:
@@ -337,6 +365,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send organization - "SD36"
       community.vmware.vmware_guest_sendkey:
@@ -357,6 +387,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send locality - "Surrey"
       community.vmware.vmware_guest_sendkey:
@@ -377,6 +409,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send state_province - "BC"
       community.vmware.vmware_guest_sendkey:
@@ -397,6 +431,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send country - "CA"
       community.vmware.vmware_guest_sendkey:
@@ -417,6 +453,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send 'Y' ENTER
       community.vmware.vmware_guest_sendkey:
@@ -428,6 +466,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send '11' for none for continent
       community.vmware.vmware_guest_sendkey:
@@ -448,6 +488,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send 'GST-7' for timezone
       community.vmware.vmware_guest_sendkey:
@@ -468,6 +510,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send '1' to confirm timezone
       community.vmware.vmware_guest_sendkey:
@@ -488,6 +532,8 @@
           - ENTER
         sleep_time: 10
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send rootpass - "cmb@Dm1n"
       community.vmware.vmware_guest_sendkey:
@@ -508,6 +554,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send rootpass again - "cmb@Dm1n"
       community.vmware.vmware_guest_sendkey:
@@ -528,6 +576,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ipcspass - "cmb@Dm1n"
       community.vmware.vmware_guest_sendkey:
@@ -548,6 +598,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send ipcspass again - "cmb@Dm1n"
       community.vmware.vmware_guest_sendkey:
@@ -568,6 +620,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send grubpass - "cmb@Dm1n"
       community.vmware.vmware_guest_sendkey:
@@ -588,6 +642,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Send grubpass again - "cmb@Dm1n"
       community.vmware.vmware_guest_sendkey:
@@ -608,6 +664,8 @@
           - ENTER
         sleep_time: 3
         validate_certs: false
+      no_log: true
+      changed_when: false
 
     - name: Wait for 180 seconds for the SBCE to come up
       ansible.builtin.pause:
