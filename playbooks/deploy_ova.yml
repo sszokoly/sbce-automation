@@ -1,0 +1,69 @@
+- name: "Create 'args' from the 'sheet'"
+  ansible.builtin.set_fact:
+    args: >-
+      {{ (ansible_facts['sbce_config']
+
+          | select('contains', sheet) 
+          | first)[sheet] }}
+
+# - name: "Debug interfaces"
+#   ansible.builtin.debug:
+#     var: args[item]
+#   loop:
+#     - B1
+#     - A2
+#     - B2
+#     - A1
+#     - M2
+#   when: item in args
+
+- name: "Deploy VM from OVA"
+  community.vmware.vmware_deploy_ovf:
+    hostname: "{{ args.platform_address }}"
+    username: "{{ args.platform_username }}"
+    password: "{{ args.platform_password }}"
+    #datacenter: "ha-datacenter"
+    datastore: "{{ args.datastore }}"
+    name: "{{ args.vmname }}"
+    ovf: "{{ args.ovf }}"
+    networks:
+      "A1": "{{ args.A1 }}"
+      "A2": "{{ args.A2 }}"
+      "B1": "{{ args.B1 }}"
+      "B2": "{{ args.B2 }}"
+      "M1": "{{ args.M1 }}"
+      "M2": "{{ args.M2 }}"
+    power_on: false
+    wait_for_ip_address: false
+    validate_certs: false
+  delegate_to: localhost
+
+- name: "Add NICs to the VM"
+  community.vmware.vmware_guest_network:
+    hostname: "{{ args.platform_address }}"
+    username: "{{ args.platform_username }}"
+    password: "{{ args.platform_password }}"
+    name: "{{ args.vmname }}"
+    network_name: "{{ args[item] }}"
+    state: present
+    validate_certs: false
+    force: true
+  loop:
+    - B1
+    - A2
+    - B2
+    - A1
+    - M2
+  when: item in args
+
+- name: "Power-ON the VM"
+  community.vmware.vmware_guest_powerstate:
+    hostname: "{{ args.platform_address }}"
+    username: "{{ args.platform_username }}"
+    password: "{{ args.platform_password }}"
+    name: "{{ args.vmname }}"
+    state: powered-on
+    validate_certs: false
+
+- name: "Complete install script on through ESXi console"
+  include_tasks: complete_esxi_console_install.yml

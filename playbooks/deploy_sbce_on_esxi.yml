@@ -2,48 +2,47 @@
 - hosts: localhost
   gather_facts: false
 
+  vars:
+    execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
+
   tasks:
     - name: "Fail if 'src' file argument is not in --extra-vars"
       ansible.builtin.fail:
-        msg: "'src' file argument is not in --extra-vars"
+        msg: "'src' argument is missing"
       when: src is not defined
       changed_when: false
 
-    - name: Extract configuration from sbce_config.xlsx
-      read_sbce_config:
-        path: "~/Projects/sbce-automation/sbce_config.xlsx"
+    - name: "Expand 'src' to 'src_path'"
+      vars:
+        execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
+      ansible.builtin.set_fact:
+        src_path: >-
+          {{ src if src.startswith('/') 
+             else (execution_dir ~ '/' ~ src) | realpath }}
 
-    # - name: sbce_config
+    # - name: "Debug 'src_path'"
+    #   debug:
+    #     var: src_path
+
+    - name: "Verify 'src_path' exists"
+      ansible.builtin.stat:
+        path: "{{ src_path }}"
+      register: src_stat_result
+      failed_when: not src_stat_result.stat.exists
+  
+    - name: "Extract configuration from sbce_config.xlsx"
+      read_sbce_config:
+        path: "{{ src_path }}"
+
+    # - name: "Debug 'sbce_config'"
     #   debug:
     #     var: ansible_facts["sbce_config"]
 
-    - name: Create list of sheet names sorted by install order
+    - name: "Create 'ems_nodes' dict with EMS's as keys and list of their SBCE's as values"
       vars:
         flat_config: "{{ sbce_config | combine }}"
-        priority: ['EMS+SBCE', 'EMS', 'SBCE']
-      set_fact:
-        install_order: >-
-          {%- set results = [] -%}
-          {%- for type in priority -%}
-            {%- for key, val in flat_config.items() -%}
-              {%- if val.apptype == type -%}
-                {%- set _ = results.append(key) -%}
-              {%- endif -%}
-            {%- endfor -%}
-          {%- endfor -%}
-          {{ results }}
-
-    # - name: flat_config
-    #   vars:
-    #     flat_config: "{{ sbce_config | combine }}"
-    #   debug:
-    #     var: flat_config
-
-    - name: Create dict of EMS and a list of their SBCE nodes
-      vars:
-        flat_config: "{{ sbce_config | combine }}"
-      set_fact:
-        install_order: >-
+      ansible.builtin.set_fact:
+        ems_nodes: >-
           {%- set ns = namespace(result={}, ems_map={}, ip_to_key={}, seen={}) -%}
 
           {# Pass 1: Build lookup maps and seed EMS buckets #}
@@ -74,28 +73,37 @@
 
           {{ ns.result }}
 
-    - name: Debug list of SBCE sheets and their corresponding EMS sheet
-      debug:
-        var: install_order
+    # - name: "Debug 'ems_nodes'"
+    #   debug:
+    #     var: ems_nodes
 
-    # - name: "Deploy {{ args.ovf }}"
-    #   community.vmware.vmware_deploy_ovf:
-    #     hostname: "{{ args.host_address }}"
-    #     username: "{{ args.host_username }}"
-    #     password: "{{ args.host_password }}"
-    #     #datacenter: "ha-datacenter"
-    #     datastore: "{{ args.datastore }}"
-    #     name: "{{ args.vmname }}"
-    #     ovf: "{{ args.ovf }}"
-    #     networks:
-    #       "A1": "{{ args.A1 }}"
-    #       "A2": "{{ args.A2 }}"
-    #       "B1": "{{ args.B1 }}"
-    #       "B2": "{{ args.B2 }}"
-    #       "M1": "{{ args.M1 }}"
-    #       "M2": "{{ args.M2 }}"
-    #     power_on: false
-    #     wait_for_ip_address: false
-    #     validate_certs: false
-    #   delegate_to: localhost
+    - name: "Create 'ordered_install_list' with sheet names in the order of installation"
+      ansible.builtin.set_fact:
+        ordered_install_list: >-
+          {%- set ordered_list = [] -%}
+          {%- for key, values in ems_nodes.items() -%}
+            {%- set _ = ordered_list.append(key) -%}
+            {%- for sublist in values -%}
+              {%- for val in sublist -%}
+                {%- set _ = ordered_list.append(val) -%}
+              {%- endfor -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {{ ordered_list | from_yaml }}
+
+    # - name: "Debug 'ordered_install_list'"
+    #   debug:
+    #     var: ordered_install_list
+
+    - name: "Deploy OVA subtasks"
+      include_tasks: deploy_ova.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
+
+    - name: "Deploy OVA subtasks"
+      include_tasks: deploy_ova.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
 ...
