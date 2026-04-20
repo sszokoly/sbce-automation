@@ -7,14 +7,15 @@
       ansible.builtin.fail:
         msg: "'src' file argument is not in --extra-vars"
       when: src is not defined
+      changed_when: false
 
     - name: Extract configuration from sbce_config.xlsx
       read_sbce_config:
-        path: "/root/Projects/sbce-automation/sbce_config.xlsx"
+        path: "~/Projects/sbce-automation/sbce_config.xlsx"
 
-    - name: sbce_config
-      debug:
-        var: ansible_facts["sbce_config"]
+    # - name: sbce_config
+    #   debug:
+    #     var: ansible_facts["sbce_config"]
 
     - name: Create list of sheet names sorted by install order
       vars:
@@ -32,17 +33,17 @@
           {%- endfor -%}
           {{ results }}
 
-    - name: flat_config
-      vars:
-        flat_config: "{{ sbce_config | combine }}"
-      debug:
-        var: flat_config
+    # - name: flat_config
+    #   vars:
+    #     flat_config: "{{ sbce_config | combine }}"
+    #   debug:
+    #     var: flat_config
 
     - name: Create dict of EMS and a list of their SBCE nodes
       vars:
         flat_config: "{{ sbce_config | combine }}"
       set_fact:
-        ems_nodes: >-
+        install_order: >-
           {%- set ns = namespace(result={}, ems_map={}, ip_to_key={}, seen={}) -%}
 
           {# Pass 1: Build lookup maps and seed EMS buckets #}
@@ -71,8 +72,11 @@
             {%- endif -%}
           {%- endfor -%}
 
-          {# Emit only EMS nodes that have at least one SBCE #}
-          {{ ns.result | dict2items | selectattr('value', '!=', []) | items2dict }}
+          {{ ns.result }}
+
+    - name: Debug list of SBCE sheets and their corresponding EMS sheet
+      debug:
+        var: install_order
 
     # - name: "Deploy {{ args.ovf }}"
     #   community.vmware.vmware_deploy_ovf:

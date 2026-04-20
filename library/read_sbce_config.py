@@ -2,6 +2,7 @@
 
 from ansible.module_utils.basic import AnsibleModule
 import openpyxl
+import os
 
 def read_sbce_config(input_file):
     """Read excel and return data. Standardized for Ansible consumption."""
@@ -26,7 +27,7 @@ def main():
         supports_check_mode=True
     )
 
-    path = module.params['path']
+    path = os.path.expanduser(module.params['path'])
     failed, result, error_msg = read_sbce_config(path)
 
     if failed:
