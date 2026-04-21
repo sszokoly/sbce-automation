@@ -47,7 +47,7 @@
     validate_certs: false
   delegate_to: localhost
 
-- name: "Add missing NICs to SBCE VM"
+- name: "Add NICs to SBCE VM"
   community.vmware.vmware_guest_network:
     hostname: "{{ args.platform_address }}"
     username: "{{ args.platform_username }}"
@@ -79,3 +79,7 @@
     name: "{{ args.vmname }}"
     state: powered-on
     validate_certs: false
+
+- name: Wait 180 seconds for initialization to complete
+  ansible.builtin.pause:
+    seconds: 180

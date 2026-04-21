@@ -26,21 +26,25 @@
 
     - name: "Step 00: Parse configuration"
       ansible.builtin.include_tasks: 00_parse_config.yml
+      tags: step00
 
     - name: "Step 01: Deploy VM (OVA)"
       ansible.builtin.include_tasks: 01_deploy_vm.yml
       loop: "{{ ordered_install_list }}"
       loop_control:
         loop_var: sheet
+      tags: step01
 
     - name: "Step 02: Console bootstrap"
       ansible.builtin.include_tasks: 02_console_bootstrap.yml
       loop: "{{ ordered_install_list }}"
       loop_control:
         loop_var: sheet
+      tags: step02
 
-    - name: "Step 03: Web UI configuration"
-      ansible.builtin.include_tasks: 03_webui_configure.yml
-      loop: "{{ ordered_install_list }}"
-      loop_control:
-        loop_var: sheet
+    # - name: "Step 03: Web UI configuration"
+    #   ansible.builtin.include_tasks: 03_webui_configure.yml
+    #   loop: "{{ ordered_install_list }}"
+    #   loop_control:
+    #     loop_var: sheet
+    #   tags: step03

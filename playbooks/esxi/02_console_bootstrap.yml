@@ -5,17 +5,17 @@
           | select('contains', sheet)
           | first)[sheet] }}
 
-- name: Wait 180 seconds for initialization to complete
-  ansible.builtin.pause:
-    seconds: 180
-
-- name: Send "1" to configure command line mode
+- name: "Set up 'sendkey_base' macro"
   community.vmware.vmware_guest_sendkey: &sendkey_base
     hostname: "{{ args.platform_address }}"
     username: "{{ args.platform_username }}"
     password: "{{ args.platform_password }}"
     name: "{{ args.vmname }}"
     validate_certs: false
+
+- name: "Enter your choice [1 - 4] : 1"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
     string_send: "1"
 
 - name: Send ENTER
@@ -27,7 +27,7 @@
   no_log: true
   changed_when: false
 
-- name: Send ipmode
+- name: "IP Mode: {{ args.ipmode }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ipmode }}"
@@ -42,7 +42,7 @@
   no_log: true
   changed_when: false
 
-- name: Send apptype
+- name: "Appliance Type: {{ args.apptype }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.apptype }}"
@@ -57,7 +57,7 @@
   no_log: true
   changed_when: false
 
-- name: Send appname
+- name: "Appliance Name: {{ args.appname }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.appname }}"
@@ -72,7 +72,7 @@
   no_log: true
   changed_when: false
 
-- name: Send ip0
+- name: "Management IP address: {{ args.ip0 }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ip0 }}"
@@ -87,7 +87,7 @@
   no_log: true
   changed_when: false
 
-- name: Send netmask0
+- name: "Management subnet mask: {{ args.netmask0 }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.netmask0 }}"
@@ -102,7 +102,7 @@
   no_log: true
   changed_when: false
 
-- name: Send gateway
+- name: "Management Gateway IP address (ipv4): {{ args.gateway }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.gateway }}"
@@ -117,7 +117,7 @@
   no_log: true
   changed_when: false
 
-- name: Send ipv6address0 (optional)
+- name: "Management IP address (ipv6): {{ args.ipv6address0 }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ipv6address0 }}"
@@ -132,7 +132,7 @@
   no_log: true
   changed_when: false
 
-- name: Send ipv6prefix0 (optional)
+- name: "Management subnet network prefix length: {{ args.ipv6prefix0 }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ipv6prefix0 }}"
@@ -147,7 +147,7 @@
   no_log: true
   changed_when: false
 
-- name: Send ipv6gateway (optional)
+- name: "Management Gateway IP Address (ipv6): {{ args.ipv6gateway }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ipv6gateway }}"
@@ -162,37 +162,19 @@
   no_log: true
   changed_when: false
 
-- name: Send ntpservers (optional)
-  community.vmware.vmware_guest_sendkey:
-    <<: *sendkey_base
-    string_send: "{{ args.ntpservers }}"
-  when: args.ntpservers is defined and (args.ntpservers | string | length) > 0
-
-- name: Send ntpservers ENTER
+- name: "NTP Server IP Address (ipv4): 127.127.1.0"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
       - ENTER
-    sleep_time: 3
-  no_log: true
-  changed_when: false
 
-- name: Send ntpipv6 (optional)
-  community.vmware.vmware_guest_sendkey:
-    <<: *sendkey_base
-    string_send: "{{ args.ntpipv6 }}"
-  when: args.ntpipv6 is defined and (args.ntpipv6 | string | length) > 0
-
-- name: Send ntpipv6 ENTER
+- name: "NTP Server IP Address (ipv6):"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
       - ENTER
-    sleep_time: 3
-  no_log: true
-  changed_when: false
 
-- name: Send dns
+- name: "List of DNS Servers: {{ args.dns }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.dns }}"
@@ -207,7 +189,7 @@
   no_log: true
   changed_when: false
 
-- name: Send domain_suffix
+- name: "Domain Suffix: {{ args.domain_suffix }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.domain_suffix }}"
@@ -222,7 +204,13 @@
   no_log: true
   changed_when: false
 
-- name: Confirm domain_suffix (default Yes)
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "Y"
+    sleep_time: 3
+
+- name: Send confirmation ENTER
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
@@ -231,7 +219,7 @@
   no_log: true
   changed_when: false
 
-- name: Send first_last_name
+- name: "First and Last Name: {{ args.first_last_name }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.first_last_name }}"
@@ -246,7 +234,7 @@
   no_log: true
   changed_when: false
 
-- name: Send organizational_unit
+- name: "Organizational Unit: {{ args.organizational_unit }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.organizational_unit }}"
@@ -261,7 +249,7 @@
   no_log: true
   changed_when: false
 
-- name: Send organization
+- name: "Organization: {{ args.organization }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.organization }}"
@@ -276,7 +264,7 @@
   no_log: true
   changed_when: false
 
-- name: Send locality
+- name: "City or Locality: {{ args.locality }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.locality }}"
@@ -291,7 +279,7 @@
   no_log: true
   changed_when: false
 
-- name: Send state_province
+- name: "State or Province: {{ args.state_province }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.state_province }}"
@@ -306,7 +294,7 @@
   no_log: true
   changed_when: false
 
-- name: Send country
+- name: "Country Code ( 2 letter code ): {{ args.country }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.country }}"
@@ -321,7 +309,13 @@
   no_log: true
   changed_when: false
 
-- name: Confirm country (default Yes)
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "Y"
+    sleep_time: 3
+
+- name: Send confirmation ENTER
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
@@ -330,7 +324,7 @@
   no_log: true
   changed_when: false
 
-- name: Send continent selection (11 = none)
+- name: "Please select a continent or ocean (11 = none): 11"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "11"
@@ -344,11 +338,10 @@
   no_log: true
   changed_when: false
 
-- name: Send timezone
+- name: "Please enter the desired value of the TZ environment variable: GMT-4"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
-    string_send: "{{ args.timezone }}"
-  when: args.timezone is defined and (args.timezone | string | length) > 0
+    string_send: "GMT-4"
 
 - name: Confirm timezone (default Yes)
   community.vmware.vmware_guest_sendkey:
@@ -359,7 +352,7 @@
   no_log: true
   changed_when: false
 
-- name: Send "1" to confirm timezone
+- name: "Is the above information OK? (1 Yes, 2 No): 1"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "1"
@@ -369,11 +362,11 @@
     <<: *sendkey_base
     keys_send:
       - ENTER
-    sleep_time: 10
+    sleep_time: 30
   no_log: true
   changed_when: false
 
-- name: Send rootpass
+- name: "New Password for 'root' user: {{ args.rootpass }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.rootpass }}"
@@ -389,14 +382,14 @@
   no_log: true
   changed_when: false
 
-- name: Send rootpass again
+- name: "Retype new password for 'root' user: {{ args.rootpass }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.rootpass }}"
   when: args.rootpass is defined and (args.rootpass | string | length) > 0
   no_log: true
 
-- name: Send rootpass again ENTER
+- name: Send rootpass ENTER
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
@@ -405,7 +398,7 @@
   no_log: true
   changed_when: false
 
-- name: Send ipcspass
+- name: "New Password for 'ipcs' user: {{ args.ipcspass }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ipcspass }}"
@@ -421,14 +414,14 @@
   no_log: true
   changed_when: false
 
-- name: Send ipcspass again
+- name: "Retype new password for 'ipcs' user: {{ args.ipcspass }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.ipcspass }}"
   when: args.ipcspass is defined and (args.ipcspass | string | length) > 0
   no_log: true
 
-- name: Send ipcspass again ENTER
+- name: Send ipcspass ENTER
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
@@ -437,7 +430,7 @@
   no_log: true
   changed_when: false
 
-- name: Send grubpass
+- name: "New Password for 'grub' user: {{ args.grubpass }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.grubpass }}"
@@ -453,14 +446,14 @@
   no_log: true
   changed_when: false
 
-- name: Send grubpass again
+- name: "Retype new password for 'grub' user: {{ args.grubpass }}"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "{{ args.grubpass }}"
   when: args.grubpass is defined and (args.grubpass | string | length) > 0
   no_log: true
 
-- name: Send grubpass again ENTER
+- name: Send grubpass ENTER
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     keys_send:
@@ -468,10 +461,6 @@
     sleep_time: 3
   no_log: true
   changed_when: false
-
-- name: Wait 180 seconds for the SBCE to come up
-  ansible.builtin.pause:
-    seconds: 180
 
 - name: Add SBCE to in-memory inventory
   ansible.builtin.add_host:
@@ -484,3 +473,34 @@
     ansible_become_method: su
     ansible_port: 22
   no_log: true
+
+- name: Wait 180 seconds for initialization to complete
+  ansible.builtin.pause:
+    seconds: 180
+
+- name: "Ansible ping to {{ args.hostname }}"
+  ansible.builtin.ping:
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Extract 1st NTP server"
+  ansible.builtin.set_fact:
+    ntpserver: "{{ (args.ntpservers | default('', true)).split(',') | first }}"
+  when: args.ntpservers | default('', true) | length > 0
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Update NTP server"
+  become: yes
+  ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ ntpserver }}"
+  when: ntpserver is defined and ntpserver | length > 0
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Update timezone"
+  become: yes
+  ansible.builtin.shell: "timedatectl set-timezone {{ args.timezone }}"
+  when: args.timezone| default('', true) | length > 0
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Disable password aging for 'ipcs' user"
+  become: yes
+  ansible.builtin.shell: "chage -E -1 -m 0 -M 99999 ipcs"
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
