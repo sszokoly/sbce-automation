@@ -1,0 +1,486 @@
+- name: "Create 'args' from the 'sheet'"
+  ansible.builtin.set_fact:
+    args: >-
+      {{ (ansible_facts['sbce_config']
+          | select('contains', sheet)
+          | first)[sheet] }}
+
+- name: Wait 180 seconds for initialization to complete
+  ansible.builtin.pause:
+    seconds: 180
+
+- name: Send "1" to configure command line mode
+  community.vmware.vmware_guest_sendkey: &sendkey_base
+    hostname: "{{ args.platform_address }}"
+    username: "{{ args.platform_username }}"
+    password: "{{ args.platform_password }}"
+    name: "{{ args.vmname }}"
+    validate_certs: false
+    string_send: "1"
+
+- name: Send ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 10
+  no_log: true
+  changed_when: false
+
+- name: Send ipmode
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ipmode }}"
+  when: args.ipmode is defined and (args.ipmode | string | length) > 0
+
+- name: Send ipmode ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send apptype
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.apptype }}"
+  when: args.apptype is defined and (args.apptype | string | length) > 0
+
+- name: Send apptype ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send appname
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.appname }}"
+  when: args.appname is defined and (args.appname | string | length) > 0
+
+- name: Send appname ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ip0
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ip0 }}"
+  when: args.ip0 is defined and (args.ip0 | string | length) > 0
+
+- name: Send ip0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send netmask0
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.netmask0 }}"
+  when: args.netmask0 is defined and (args.netmask0 | string | length) > 0
+
+- name: Send netmask0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send gateway
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.gateway }}"
+  when: args.gateway is defined and (args.gateway | string | length) > 0
+
+- name: Send gateway ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ipv6address0 (optional)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ipv6address0 }}"
+  when: args.ipv6address0 is defined and (args.ipv6address0 | string | length) > 0
+
+- name: Send ipv6address0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ipv6prefix0 (optional)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ipv6prefix0 }}"
+  when: args.ipv6prefix0 is defined and (args.ipv6prefix0 | string | length) > 0
+
+- name: Send ipv6prefix0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ipv6gateway (optional)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ipv6gateway }}"
+  when: args.ipv6gateway is defined and (args.ipv6gateway | string | length) > 0
+
+- name: Send ipv6gateway ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ntpservers (optional)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ntpservers }}"
+  when: args.ntpservers is defined and (args.ntpservers | string | length) > 0
+
+- name: Send ntpservers ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ntpipv6 (optional)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ntpipv6 }}"
+  when: args.ntpipv6 is defined and (args.ntpipv6 | string | length) > 0
+
+- name: Send ntpipv6 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send dns
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.dns }}"
+  when: args.dns is defined and (args.dns | string | length) > 0
+
+- name: Send dns ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send domain_suffix
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.domain_suffix }}"
+  when: args.domain_suffix is defined and (args.domain_suffix | string | length) > 0
+
+- name: Send domain_suffix ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Confirm domain_suffix (default Yes)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send first_last_name
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.first_last_name }}"
+  when: args.first_last_name is defined and (args.first_last_name | string | length) > 0
+
+- name: Send first_last_name ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send organizational_unit
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.organizational_unit }}"
+  when: args.organizational_unit is defined and (args.organizational_unit | string | length) > 0
+
+- name: Send organizational_unit ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send organization
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.organization }}"
+  when: args.organization is defined and (args.organization | string | length) > 0
+
+- name: Send organization ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send locality
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.locality }}"
+  when: args.locality is defined and (args.locality | string | length) > 0
+
+- name: Send locality ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send state_province
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.state_province }}"
+  when: args.state_province is defined and (args.state_province | string | length) > 0
+
+- name: Send state_province ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send country
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.country }}"
+  when: args.country is defined and (args.country | string | length) > 0
+
+- name: Send country ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Confirm country (default Yes)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send continent selection (11 = none)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "11"
+
+- name: Confirm continent (default Yes)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send timezone
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.timezone }}"
+  when: args.timezone is defined and (args.timezone | string | length) > 0
+
+- name: Confirm timezone (default Yes)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send "1" to confirm timezone
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "1"
+
+- name: Send ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 10
+  no_log: true
+  changed_when: false
+
+- name: Send rootpass
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.rootpass }}"
+  when: args.rootpass is defined and (args.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send rootpass again
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.rootpass }}"
+  when: args.rootpass is defined and (args.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass again ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ipcspass
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ipcspass }}"
+  when: args.ipcspass is defined and (args.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send ipcspass again
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.ipcspass }}"
+  when: args.ipcspass is defined and (args.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass again ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send grubpass
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.grubpass }}"
+  when: args.grubpass is defined and (args.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Send grubpass again
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ args.grubpass }}"
+  when: args.grubpass is defined and (args.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass again ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 3
+  no_log: true
+  changed_when: false
+
+- name: Wait 180 seconds for the SBCE to come up
+  ansible.builtin.pause:
+    seconds: 180
+
+- name: Add SBCE to in-memory inventory
+  ansible.builtin.add_host:
+    hostname: "{{ args.hostname | default(args.vmname) }}"
+    ansible_host: "{{ args.ip0 }}"
+    ansible_user: ipcs
+    ansible_password: "{{ args.ipcspass }}"
+    ansible_become_user: root
+    ansible_become_password: "{{ args.rootpass }}"
+    ansible_become_method: su
+    ansible_port: 22
+  no_log: true

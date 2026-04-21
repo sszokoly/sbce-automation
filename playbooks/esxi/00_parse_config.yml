@@ -1,0 +1,52 @@
+- name: "Extract configuration from sbce_config.xlsx"
+  read_sbce_config:
+    path: "{{ src_path }}"
+
+- name: "Create 'ems_nodes' dict with EMS's as keys and list of their SBCE's as values"
+  vars:
+    flat_config: "{{ sbce_config | combine }}"
+  ansible.builtin.set_fact:
+    ems_nodes: >-
+      {%- set ns = namespace(result={}, ems_map={}, ip_to_key={}, seen={}) -%}
+
+      {# Pass 1: Build lookup maps and seed EMS buckets #}
+      {%- for key, val in flat_config.items() -%}
+        {%- if val.ip0 -%}
+          {%- set _ = ns.ip_to_key.update({val.ip0: key}) -%}
+        {%- endif -%}
+        {%- if val.apptype in ['EMS', 'EMS+SBCE'] -%}
+          {%- set _ = ns.ems_map.update({val.ip0: key}) -%}
+          {%- set _ = ns.result.update({key: []}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {# Pass 2: Bucket SBCEs under their EMS, pairing HA peers #}
+      {%- for key, val in flat_config.items() -%}
+        {%- if val.apptype == 'SBCE' and val.emsip in ns.ems_map and key not in ns.seen -%}
+          {%- set ems = ns.ems_map[val.emsip] -%}
+          {%- if val.ha_peer_ip and val.ha_peer_ip in ns.ip_to_key -%}
+            {%- set peer = ns.ip_to_key[val.ha_peer_ip] -%}
+            {%- set _ = ns.result[ems].append([key, peer]) -%}
+            {%- set _ = ns.seen.update({key: 1, peer: 1}) -%}
+          {%- else -%}
+            {%- set _ = ns.result[ems].append([key]) -%}
+            {%- set _ = ns.seen.update({key: 1}) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+
+      {{ ns.result }}
+
+- name: "Create 'ordered_install_list' with sheet names in the order of installation"
+  ansible.builtin.set_fact:
+    ordered_install_list: >-
+      {%- set ordered_list = [] -%}
+      {%- for key, values in ems_nodes.items() -%}
+        {%- set _ = ordered_list.append(key) -%}
+        {%- for sublist in values -%}
+          {%- for val in sublist -%}
+            {%- set _ = ordered_list.append(val) -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ ordered_list | from_yaml }}

@@ -1,0 +1,18 @@
+- name: "Create 'args' from the 'sheet'"
+  ansible.builtin.set_fact:
+    args: >-
+      {{ (ansible_facts['sbce_config']
+          | select('contains', sheet)
+          | first)[sheet] }}
+
+- name: Accept EULA
+  ansible.builtin.command: "python3 ../../module_utils/initial_sbce_web_setup.py --eula --host sheet.ip0
+  register: eula_output
+
+- name: Change ucsec password
+  ansible.builtin.command: "python3 ../../module_utils/initial_sbce_web_setup.py --change-password --host sheet.ip0 --ucsec-password sheet.ucsecpass 
+  register: change_pass_output
+
+- name: Add node
+  ansible.builtin.command: "python3 ../../module_utils/initial_sbce_web_setup.py --add-node --host emsip --ucsec-password sheet.ucsecpass --type sbce --name sheet.vmname --ip sheet.ip0
+  register: change_pass_output

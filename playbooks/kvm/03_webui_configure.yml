@@ -1,0 +1,11 @@
+- name: "Create 'args' from the 'sheet'"
+  ansible.builtin.set_fact:
+    args: >-
+      {{ (ansible_facts['sbce_config']
+          | select('contains', sheet)
+          | first)[sheet] }}
+
+- name: "Step 03 placeholder (Web UI configuration not implemented yet)"
+  ansible.builtin.debug:
+    msg: "Skipping Web UI configuration for {{ args.vmname }} ({{ sheet }})"
+  changed_when: false

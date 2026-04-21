@@ -1,0 +1,11 @@
+- name: "Create 'args' from the 'sheet'"
+  ansible.builtin.set_fact:
+    args: >-
+      {{ (ansible_facts['sbce_config']
+          | select('contains', sheet)
+          | first)[sheet] }}
+
+- name: "KVM Step 02 not implemented"
+  ansible.builtin.fail:
+    msg: "KVM console bootstrap is not implemented yet (sheet={{ sheet }}, vm={{ args.vmname | default('unknown') }})"
+  changed_when: false

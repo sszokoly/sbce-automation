@@ -1,9 +1,0 @@
----
-- name: Read sbce_config
-  command: python3 {{ sbce_config }}
-  register: args
-
-- name: Debug
-  debug:
-    var: args
-...

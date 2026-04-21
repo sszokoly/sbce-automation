@@ -1,0 +1,46 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
+
+  tasks:
+    - name: "Fail if 'src' file argument is not in --extra-vars"
+      ansible.builtin.fail:
+        msg: "'src' argument is missing"
+      when: src is not defined
+      changed_when: false
+
+    - name: "Expand 'src' to 'src_path'"
+      ansible.builtin.set_fact:
+        src_path: >-
+          {{ src if src.startswith('/')
+             else (execution_dir ~ '/' ~ src) | realpath }}
+
+    - name: "Verify 'src_path' exists"
+      ansible.builtin.stat:
+        path: "{{ src_path }}"
+      register: src_stat_result
+      failed_when: not src_stat_result.stat.exists
+
+    - name: "Step 00: Parse configuration"
+      ansible.builtin.include_tasks: 00_parse_config.yml
+
+    - name: "Step 01: Deploy VM (OVA)"
+      ansible.builtin.include_tasks: 01_deploy_vm.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
+
+    - name: "Step 02: Console bootstrap"
+      ansible.builtin.include_tasks: 02_console_bootstrap.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
+
+    - name: "Step 03: Web UI configuration"
+      ansible.builtin.include_tasks: 03_webui_configure.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
