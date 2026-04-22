@@ -5,7 +5,66 @@
           | select('contains', sheet)
           | first)[sheet] }}
 
-- name: "KVM Step 01 not implemented"
-  ansible.builtin.fail:
-    msg: "KVM deploy is not implemented yet (sheet={{ sheet }}, vm={{ args.vmname | default('unknown') }})"
-  changed_when: false
+- name: Extract basename from SBCE image filename
+  ansible.builtin.set_fact:
+    filename: "{{ args['ovf'] | basename }}"
+  when: args['ovf'] | default('', true) | length > 0
+
+- name: Create image_file_name from filename
+  vars:
+    stem: "{{ (filename | default('', true)).split('.') | last }}"
+    type: "{{ 'SBCE' if args['apptype'] == 'SBCE' else 'EMS' }}"
+  ansible.builtin.set_fact:
+    image_filename: "{{ stem }}-{{ type }}-{{ args['vmname'] }}.qcow2"
+
+- name: Create /var/lib/libvirt/staging folder if it does not exist
+  ansible.builtin.file:
+    path: /var/lib/libvirt/staging
+    state: directory
+    mode: '0755'
+
+- name: Add KVM platform to ansible
+  ansible.builtin.add_host:
+    hostname: "kvm_host"
+    ansible_host: "{{ args['platform_address'] }}"
+    ansible_user: "{{ args['platform_username'] }}"
+    ansible_password: "{{ args['platform_password'] }}"
+    ansible_become_method: sudo
+    ansible_port: 22
+    ansible_remote_tmp: "/var/lib/libvirt/staging/""
+
+- name: Copy SBCE image to KVM host
+  ansible.builtin.copy:
+    src: "{{ args['ovf'] }}"
+    dst: "/var/lib/libvirt/staging/"
+  delegate_to: kvm_host
+
+- name: Convert qcow2 image to thick-provisioned
+  ansible.builtin.shell:
+    cmd: "qemu-img convert -O qcow2 -o preallocation=full {{ filename }} {{ image_filename }}"
+    chdir: "/var/lib/libvirt/staging/"
+  become: yes
+
+- name: Move image to /var/lib/libvirt/images folder
+  ansible.buitlin.copy:
+    remote_src: "/var/lib/libvirt/staging/{{ image_filename }}"
+    dst: "/var/lib/libvirt/images/"
+    owner: qemu
+    group: qemu
+    mode: '0640'
+  become: yes
+
+- name: Import VM
+  ansible.buitlin.shell: virt-install \
+    --name "{{ args['vmname'] }}" \
+    --memory 16000 \
+    --vcpus 3\
+    --disk "/var/lib/libvirt/staging/{{ image_filename }}",bus=virtio \
+    --os-variant "RHEL 8" \
+    --network network=bridge200 \
+    --import
+  become: yes
+
+- name: Power on VM
+  ansible.buitlin.shell: "virsh start {{ args['vmname'] }}" 
+  become: yes
