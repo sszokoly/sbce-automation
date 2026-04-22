@@ -12,7 +12,7 @@
 
 - name: Create image_file_name from filename
   vars:
-    stem: "{{ (filename | default('', true)).split('.') | last }}"
+    stem: "{{ (filename | default('', true)).rsplit('.', 1) | first }}"
     type: "{{ 'SBCE' if args['apptype'] == 'SBCE' else 'EMS' }}"
   ansible.builtin.set_fact:
     image_filename: "{{ stem }}-{{ type }}-{{ args['vmname'] }}.qcow2"
@@ -31,12 +31,12 @@
     ansible_password: "{{ args['platform_password'] }}"
     ansible_become_method: sudo
     ansible_port: 22
-    ansible_remote_tmp: "/var/lib/libvirt/staging/""
+    ansible_remote_tmp: "/var/lib/libvirt/staging/"
 
 - name: Copy SBCE image to KVM host
   ansible.builtin.copy:
     src: "{{ args['ovf'] }}"
-    dst: "/var/lib/libvirt/staging/"
+    dest: "/var/lib/libvirt/staging/"
   delegate_to: kvm_host
 
 - name: Convert qcow2 image to thick-provisioned
@@ -45,26 +45,48 @@
     chdir: "/var/lib/libvirt/staging/"
   become: yes
 
-- name: Move image to /var/lib/libvirt/images folder
-  ansible.buitlin.copy:
-    remote_src: "/var/lib/libvirt/staging/{{ image_filename }}"
-    dst: "/var/lib/libvirt/images/"
+- name: "Move {{ image_filename }} to images folder"
+  ansible.builtin.copy:
+    src: "/var/lib/libvirt/staging/{{ image_filename }}"
+    dest: "/var/lib/libvirt/images"
+    remote_src: true
     owner: qemu
     group: qemu
     mode: '0640'
   become: yes
 
 - name: Import VM
-  ansible.buitlin.shell: virt-install \
-    --name "{{ args['vmname'] }}" \
-    --memory 16000 \
-    --vcpus 3\
-    --disk "/var/lib/libvirt/staging/{{ image_filename }}",bus=virtio \
-    --os-variant "RHEL 8" \
-    --network network=bridge200 \
+  ansible.builtin.shell: > 
+    virt-install 
+    --connect qemu:///system 
+    --name "{{ args['vmname'] }}" 
+    --memory 16384
+    --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1 
+    --disk /var/lib/libvirt/images/{{ image_filename }},bus=scsi,cache=directsync 
+    --os-variant rhel8-unknown 
+    --boot uefi 
+    --cpu host-model 
+    --noautoconsole 
+    --network bridge="{{ args['M1'] }}" 
+    --network bridge="{{ args['B1'] }}" 
+    --network bridge="{{ args['A2'] }}" 
+    --network bridge="{{ args['B2'] }}" 
+    --network bridge="{{ args['A1'] }}" 
+    --network bridge="{{ args['M2'] }}" 
     --import
   become: yes
 
-- name: Power on VM
-  ansible.buitlin.shell: "virsh start {{ args['vmname'] }}" 
+- name: Wait 30 seconds for the VM to boot up
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Check if VM is running
+  ansible.builtin.shell: "virsh list --name --state-running"
   become: yes
+  register: running_vms
+  changed_when: false
+
+- name: Power on VM
+  ansible.builtin.shell: "virsh start {{ args['vmname'] }}"
+  become: yes
+  when: args['vmname'] not in running_vms.stdout
