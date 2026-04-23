@@ -15,13 +15,7 @@
     stem: "{{ (filename | default('', true)).rsplit('.', 1) | first }}"
     type: "{{ 'SBCE' if args['apptype'] == 'SBCE' else 'EMS' }}"
   ansible.builtin.set_fact:
-    image_filename: "{{ stem }}-{{ type }}-{{ args['vmname'] }}.qcow2"
-
-- name: Create /var/lib/libvirt/staging folder if it does not exist
-  ansible.builtin.file:
-    path: /var/lib/libvirt/staging
-    state: directory
-    mode: '0755'
+    image_filename: "{{ stem }}-{{ type }}-{{ args['vmname'] }}-thick.qcow2"
 
 - name: Add KVM platform to ansible
   ansible.builtin.add_host:
@@ -29,23 +23,67 @@
     ansible_host: "{{ args['platform_address'] }}"
     ansible_user: "{{ args['platform_username'] }}"
     ansible_password: "{{ args['platform_password'] }}"
+    ansible_become: true
     ansible_become_method: sudo
+    ansible_become_password: "{{ args['platform_password'] }}"
     ansible_port: 22
+
+- name: Create /var/lib/libvirt/staging folder if it does not exist
+  ansible.builtin.file:
+    path: /var/lib/libvirt/staging
+    state: directory
+    mode: '0755'
+    owner: "{{ args['platform_username'] }}"
+    group: "{{ args['platform_username'] }}"
+  become: yes
+  delegate_to: kvm_host
+
+- name: Set ansible_remote_tmp after staging folder exists
+  ansible.builtin.add_host:
+    hostname: "kvm_host"
     ansible_remote_tmp: "/var/lib/libvirt/staging/"
+
+# - name: Check image exists on controller
+#   ansible.builtin.stat:
+#     path: "{{ args['ovf'] }}"
+#   register: ovf_local_stat
+#   delegate_to: localhost
+#   run_once: true
+#   become: false
+#   when: args['ovf'] | default('', true) | length > 0
+
+# - name: Fail if image path is missing on controller
+#   ansible.builtin.fail:
+#     msg: "Image file not found on controller: {{ args['ovf'] }}"
+#   become: false
+#   when:
+#     - args['ovf'] | default('', true) | length > 0
+#     - not ovf_local_stat.stat.exists
+
+- name: Check if image already exists on KVM host
+  ansible.builtin.stat:
+    path: "/var/lib/libvirt/staging/{{ filename }}"
+  register: ovf_remote_stat
+  delegate_to: kvm_host
+  when: args['ovf'] | default('', true) | length > 0
 
 - name: Copy SBCE image to KVM host
   ansible.builtin.copy:
     src: "{{ args['ovf'] }}"
-    dest: "/var/lib/libvirt/staging/"
+    dest: "/var/lib/libvirt/staging/{{ filename }}"
   delegate_to: kvm_host
+  when:
+    - args['ovf'] | default('', true) | length > 0
+    - not ovf_remote_stat.stat.exists
 
 - name: Convert qcow2 image to thick-provisioned
   ansible.builtin.shell:
     cmd: "qemu-img convert -O qcow2 -o preallocation=full {{ filename }} {{ image_filename }}"
     chdir: "/var/lib/libvirt/staging/"
   become: yes
+  delegate_to: kvm_host
 
-- name: "Move {{ image_filename }} to images folder"
+- name: "Copy {{ image_filename }} to /var/lib/libvirt/images folder"
   ansible.builtin.copy:
     src: "/var/lib/libvirt/staging/{{ image_filename }}"
     dest: "/var/lib/libvirt/images"
@@ -54,39 +92,47 @@
     group: qemu
     mode: '0640'
   become: yes
+  delegate_to: kvm_host
 
-- name: Import VM
-  ansible.builtin.shell: > 
-    virt-install 
-    --connect qemu:///system 
-    --name "{{ args['vmname'] }}" 
+- name: Generate VM XML (do not start)
+  ansible.builtin.shell: >
+    virt-install
+    --connect qemu:///system
+    --name "{{ args['vmname'] }}"
     --memory 16384
-    --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1 
-    --disk /var/lib/libvirt/images/{{ image_filename }},bus=scsi,cache=directsync 
-    --os-variant rhel8-unknown 
-    --boot uefi 
-    --cpu host-model 
-    --noautoconsole 
-    --network bridge="{{ args['M1'] }}" 
-    --network bridge="{{ args['B1'] }}" 
-    --network bridge="{{ args['A2'] }}" 
-    --network bridge="{{ args['B2'] }}" 
-    --network bridge="{{ args['A1'] }}" 
-    --network bridge="{{ args['M2'] }}" 
+    --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1
+    --disk /var/lib/libvirt/images/{{ image_filename }},bus=virtio,cache=directsync,boot.order=1
+    --os-variant rhel8.10
+    --boot uefi
+    --cpu host-model
+    --noautoconsole
+    --network bridge="{{ args['M1'] }}"
+    --network bridge="{{ args['B1'] }}"
+    --network bridge="{{ args['A2'] }}"
+    --network bridge="{{ args['B2'] }}"
+    --network bridge="{{ args['A1'] }}"
+    --network bridge="{{ args['M2'] }}"
     --import
+    --print-xml > /tmp/{{ args['vmname'] }}.xml
+  args:
+    creates: "/tmp/{{ args['vmname'] }}.xml"
   become: yes
+  delegate_to: kvm_host
 
-- name: Wait 30 seconds for the VM to boot up
+- name: Define VM (still powered off)
+  ansible.builtin.command: virsh -c qemu:///system define /tmp/{{ args['vmname'] }}.xml
+  become: yes
+  delegate_to: kvm_host
+
+- name: Wait 10 seconds for the initialization to complete
   ansible.builtin.pause:
-    seconds: 30
-
-- name: Check if VM is running
-  ansible.builtin.shell: "virsh list --name --state-running"
-  become: yes
-  register: running_vms
-  changed_when: false
+    seconds: 10
 
 - name: Power on VM
-  ansible.builtin.shell: "virsh start {{ args['vmname'] }}"
+  ansible.builtin.command: virsh -c qemu:///system start {{ args['vmname'] }}
   become: yes
-  when: args['vmname'] not in running_vms.stdout
+  delegate_to: kvm_host
+
+# - name: Wait 180 seconds for the initialization to complete
+#   ansible.builtin.pause:
+#     seconds: 180
