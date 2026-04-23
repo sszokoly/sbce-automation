@@ -5,7 +5,109 @@
           | select('contains', sheet)
           | first)[sheet] }}
 
-- name: "KVM Step 02 not implemented"
-  ansible.builtin.fail:
-    msg: "KVM console bootstrap is not implemented yet (sheet={{ sheet }}, vm={{ args.vmname | default('unknown') }})"
-  changed_when: false
+- name: "Debug args"
+  ansible.builtin.debug:
+    var: args
+
+- name: "Enter your choice [1 - 4] : 1"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "1"
+    sleep_time: 10
+
+- name: "IP Mode: {{ args.ipmode }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ipmode }}"
+    sleep_time: 3
+  when: args.ipmode is defined and (args.ipmode | string | length) > 0
+
+- name: "Appliance Type: {{ args.apptype }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.apptype }}"
+    sleep_time: 3
+  when: args.apptype is defined and (args.apptype | string | length) > 0
+  
+- name: "Appliance Name: {{ args.appname }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.appname }}"
+    sleep_time: 3
+  when: args.appname is defined and (args.appname | string | length) > 0
+
+- name: "Management IP address: {{ args.ip0 }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ip0 }}"
+    sleep_time: 3
+  when: args.ip0 is defined and (args.ip0 | string | length) > 0
+
+- name: "Management subnet mask: {{ args.netmask0 }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.netmask0 }}"
+    sleep_time: 3
+  when: args.netmask0 is defined and (args.netmask0 | string | length) > 0
+
+- name: "Management Gateway IP address (ipv4): {{ args.gateway }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.gateway }}"
+    sleep_time: 3
+  when: args.gateway is defined and (args.gateway | string | length) > 0
+
+- name: "Management IP address (ipv6): {{ args.ipv6address0 }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ipv6address0 }}"
+    sleep_time: 3
+  when: args.ipv6address0 is defined and (args.ipv6address0 | string | length) > 0
+
+- name: "Management subnet network prefix length: {{ args.ipv6prefix0 }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ipv6prefix0 }}"
+    sleep_time: 3
+  when: args.ipv6prefix0 is defined and (args.ipv6prefix0 | string | length) > 0
+
+- name: "Management subnet network prefix length: {{ args.ipv6gateway }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ipv6gateway }}"
+    sleep_time: 3
+  when: args.ipv6gateway is defined and (args.ipv6gateway | string | length) > 0
+
+- name: "NTP Server IP Address (ipv4): 127.127.1.0"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: 3
+
+- name: "NTP Server IP Address (ipv6):"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: 3
+
+- name: "List of DNS Servers: {{ args.dns }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.dns }}"
+    sleep_time: 3
+  when: args.dns is defined and (args.dns | string | length) > 0
+
+- name: "Domain Suffix: {{ args.domain_suffix }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.domain_suffix }}"
+    sleep_time: 3
+  when: args.domain_suffix is defined and (args.domain_suffix | string | length) > 0
+
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "Y"
+    sleep_time: 3

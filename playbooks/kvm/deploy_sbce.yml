@@ -4,6 +4,7 @@
 
   vars:
     execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
+    default_sleep_time: 3
 
   tasks:
     - name: "Fail if 'src' file argument is not in --extra-vars"
@@ -33,11 +34,11 @@
       loop_control:
         loop_var: sheet
 
-    # - name: "Step 02: Console bootstrap"
-    #   ansible.builtin.include_tasks: 02_console_bootstrap.yml
-    #   loop: "{{ ordered_install_list }}"
-    #   loop_control:
-    #     loop_var: sheet
+    - name: "Step 02: Console bootstrap"
+      ansible.builtin.include_tasks: 02_console_bootstrap.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
 
     # - name: "Step 03: Web UI configuration"
     #   ansible.builtin.include_tasks: 03_webui_configure.yml
