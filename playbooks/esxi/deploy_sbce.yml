@@ -4,6 +4,7 @@
 
   vars:
     execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
+    sleep_time: 3
 
   tasks:
     - name: "Fail if 'src' file argument is not in --extra-vars"

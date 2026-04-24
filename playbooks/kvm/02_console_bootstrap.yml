@@ -5,109 +5,523 @@
           | select('contains', sheet)
           | first)[sheet] }}
 
-- name: "Debug args"
-  ansible.builtin.debug:
-    var: args
-
 - name: "Enter your choice [1 - 4] : 1"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "1"
+    no_enter: true
+
+- name: Send ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
     sleep_time: 10
+  no_log: true
+  changed_when: false
 
 - name: "IP Mode: {{ args.ipmode }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.ipmode }}"
-    sleep_time: 3
+    no_enter: true
   when: args.ipmode is defined and (args.ipmode | string | length) > 0
+
+- name: Send ipmode ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Appliance Type: {{ args.apptype }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.apptype }}"
-    sleep_time: 3
+    no_enter: true
   when: args.apptype is defined and (args.apptype | string | length) > 0
-  
+
+- name: Send apptype ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+   
 - name: "Appliance Name: {{ args.appname }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.appname }}"
-    sleep_time: 3
+    no_enter: true
   when: args.appname is defined and (args.appname | string | length) > 0
+
+- name: Send appname ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Management IP address: {{ args.ip0 }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.ip0 }}"
-    sleep_time: 3
+    no_enter: true
   when: args.ip0 is defined and (args.ip0 | string | length) > 0
+
+- name: Send ip0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Management subnet mask: {{ args.netmask0 }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.netmask0 }}"
-    sleep_time: 3
+    no_enter: true
   when: args.netmask0 is defined and (args.netmask0 | string | length) > 0
+
+- name: Send netmask0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Management Gateway IP address (ipv4): {{ args.gateway }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.gateway }}"
-    sleep_time: 3
+    no_enter: true
   when: args.gateway is defined and (args.gateway | string | length) > 0
+
+- name: Send gateway ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Management IP address (ipv6): {{ args.ipv6address0 }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.ipv6address0 }}"
-    sleep_time: 3
+    no_enter: true
   when: args.ipv6address0 is defined and (args.ipv6address0 | string | length) > 0
+
+- name: Send ipv6address0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Management subnet network prefix length: {{ args.ipv6prefix0 }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.ipv6prefix0 }}"
-    sleep_time: 3
+    no_enter: true
   when: args.ipv6prefix0 is defined and (args.ipv6prefix0 | string | length) > 0
 
-- name: "Management subnet network prefix length: {{ args.ipv6gateway }}"
+- name: Send ipv6prefix0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management Gateway IP Address (ipv6): {{ args.ipv6gateway }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.ipv6gateway }}"
-    sleep_time: 3
+    no_enter: true
   when: args.ipv6gateway is defined and (args.ipv6gateway | string | length) > 0
+
+- name: Send ipv6gateway ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "NTP Server IP Address (ipv4): 127.127.1.0"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     keys_send:
       - ENTER
-    sleep_time: 3
 
 - name: "NTP Server IP Address (ipv6):"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     keys_send:
       - ENTER
-    sleep_time: 3
 
 - name: "List of DNS Servers: {{ args.dns }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.dns }}"
-    sleep_time: 3
+    no_enter: true
   when: args.dns is defined and (args.dns | string | length) > 0
+
+- name: Send dns ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Domain Suffix: {{ args.domain_suffix }}"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "{{ args.domain_suffix }}"
-    sleep_time: 3
+    no_enter: true
   when: args.domain_suffix is defined and (args.domain_suffix | string | length) > 0
+
+- name: Send domain_suffix ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
 
 - name: "Enter 'Y' if the above infirmation is correct: Y"
   kvm_guest_sendkey:
     name: "{{ args['vmname'] }}"
     string_send: "Y"
-    sleep_time: 3
+    no_enter: true
+    sleep_time: "{{ sleep_time }}"
+
+- name: Send confirmation ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "First and Last Name: {{ args.first_last_name }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.first_last_name }}"
+    no_enter: true
+  when: args.first_last_name is defined and (args.first_last_name | string | length) > 0
+
+- name: Send first_last_name ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Organizational Unit: {{ args.organizational_unit }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.organizational_unit }}"
+    no_enter: true
+  when: args.organizational_unit is defined and (args.organizational_unit | string | length) > 0
+
+- name: Send organizational_unit ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Organization: {{ args.organization }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.organization }}"
+    no_enter: true
+  when: args.organization is defined and (args.organization | string | length) > 0
+
+- name: Send organization ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "City or Locality: {{ args.locality }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.locality }}"
+    no_enter: true
+  when: args.locality is defined and (args.locality | string | length) > 0
+
+- name: Send locality ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "State or Province: {{ args.state_province }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.state_province }}"
+    no_enter: true
+  when: args.state_province is defined and (args.state_province | string | length) > 0
+
+- name: Send state_province ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Country Code ( 2 letter code ): {{ args.country }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.country }}"
+    no_enter: true
+  when: args.country is defined and (args.country | string | length) > 0
+
+- name: Send country ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "Y"
+    no_enter: true
+    sleep_time: "{{ sleep_time }}"
+
+- name: Send confirmation ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Please select a continent or ocean (11 = none): 11"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "11"
+    no_enter: true
+
+- name: Confirm continent (default Yes)
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Please enter the desired value of the TZ environment variable: GMT-4"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "GMT-4"
+    no_enter: true
+
+- name: Confirm timezone (default Yes)
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Is the above information OK? (1 Yes, 2 No): 1"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "1"
+    no_enter: true
+
+- name: Send ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: 90
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'root' user: {{ args.rootpass }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.rootpass }}"
+    no_enter: true
+  when: args.rootpass is defined and (args.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'root' user: {{ args.rootpass }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.rootpass }}"
+    no_enter: true
+  when: args.rootpass is defined and (args.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'ipcs' user: {{ args.ipcspass }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ipcspass }}"
+    no_enter: true
+  when: args.ipcspass is defined and (args.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'ipcs' user: {{ args.ipcspass }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.ipcspass }}"
+    no_enter: true
+  when: args.ipcspass is defined and (args.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'grub' user: {{ args.grubpass }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.grubpass }}"
+    no_enter: true
+  when: args.grubpass is defined and (args.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'grub' user: {{ args.grubpass }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ args.grubpass }}"
+    no_enter: true
+  when: args.grubpass is defined and (args.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: Add SBCE to in-memory inventory
+  ansible.builtin.add_host:
+    hostname: "{{ args.hostname | default(args.vmname) }}"
+    ansible_host: "{{ args.ip0 }}"
+    ansible_user: ipcs
+    ansible_password: "{{ args.ipcspass }}"
+    ansible_become_user: root
+    ansible_become_password: "{{ args.rootpass }}"
+    ansible_become_method: su
+    ansible_port: 22
+  no_log: true
+
+- name: Wait 210 seconds for initialization to complete
+  ansible.builtin.pause:
+    seconds: 210
+
+- name: "Ansible ping to {{ args.hostname }}"
+  ansible.builtin.ping:
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Update timezone"
+  become: yes
+  ansible.builtin.shell: "timedatectl set-timezone {{ args.timezone }}"
+  when: args.timezone| default('', true) | length > 0
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Extract 1st NTP server"
+  ansible.builtin.set_fact:
+    ntpserver: "{{ (args.ntpservers | default('', true)).split(',') | first }}"
+  when: args.ntpservers | default('', true) | length > 0
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Update NTP server"
+  become: yes
+  ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ ntpserver }}"
+  when: ntpserver is defined and ntpserver | length > 0
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+
+- name: "Disable password aging for 'ipcs' user"
+  become: yes
+  ansible.builtin.shell: "chage -E -1 -m 0 -M 99999 ipcs"
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
