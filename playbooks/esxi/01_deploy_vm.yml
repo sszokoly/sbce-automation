@@ -14,23 +14,12 @@
   ansible.builtin.set_fact:
     ovf_networks: >-
       {%- set result = {} -%}
-      {%- for k in ['M1', 'M2', 'A1', 'A2', 'B1', 'B2'] -%}
-        {%- if args[k] is defined and (args[k] | string | length) > 0 -%}
+      {%- for k in ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] -%}
+        {%- if args[k] is defined and args[k] -%}
           {%- set _ = result.update({k: args[k]}) -%}
         {%- endif -%}
       {%- endfor -%}
       {{ result }}
-
-# - name: "Debug interfaces"
-#   ansible.builtin.debug:
-#     var: args[item]
-#   loop:
-#     - B1
-#     - A2
-#     - B2
-#     - A1
-#     - M2
-#   when: item in args
 
 - name: "Deploy SBCE OVA"
   community.vmware.vmware_deploy_ovf:
@@ -55,21 +44,11 @@
     name: "{{ args.vmname }}"
     network_name: "{{ args[item] }}"
     state: present
+    device_type: vmxnet3
     validate_certs: false
     force: true
-  loop:
-    - B1
-    - A2
-    - B2
-    - A1
-    - M2
-  when: item in args
-
-  # Optional: if you also want to ensure a second Management NIC exists.
-  # (Typically M1 is deployed by the OVA, and M2 is added here.)
-  # loop:
-  #   - M1
-  #   - M2
+  loop: "{{ ovf_networks.keys() | reject('equalto', 'M1') | list }}"
+  when: ovf_networks[item] is defined and ovf_networks[item] | length > 0
 
 - name: "Power-ON the VM"
   community.vmware.vmware_guest_powerstate:
@@ -80,6 +59,6 @@
     state: powered-on
     validate_certs: false
 
-- name: Wait 180 seconds for initialization to complete
+- name: Wait 240 seconds for VM to boot up
   ansible.builtin.pause:
-    seconds: 180
+    seconds: 240
