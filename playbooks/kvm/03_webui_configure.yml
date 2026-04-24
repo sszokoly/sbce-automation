@@ -1,3 +1,11 @@
+- name: "Debug ordered_install_list"
+  ansible.builtin.debug:
+    var: ordered_install_list
+
+- name: "Debug ems_nodes"
+  ansible.builtin.debug:
+    var: ems_nodes
+
 - name: "Create 'args' from the 'sheet'"
   ansible.builtin.set_fact:
     args: >-
@@ -5,7 +13,3 @@
           | select('contains', sheet)
           | first)[sheet] }}
 
-- name: "Step 03 placeholder (Web UI configuration not implemented yet)"
-  ansible.builtin.debug:
-    msg: "Skipping Web UI configuration for {{ args.vmname }} ({{ sheet }})"
-  changed_when: false

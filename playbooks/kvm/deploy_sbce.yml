@@ -36,16 +36,16 @@
         loop_var: sheet
       tags: step01
 
-    - name: "Step 02: Console bootstrap"
-      ansible.builtin.include_tasks: 02_console_bootstrap.yml
-      loop: "{{ ordered_install_list }}"
-      loop_control:
-        loop_var: sheet
-      tags: step02
-
-    # - name: "Step 03: Web UI configuration"
-    #   ansible.builtin.include_tasks: 03_webui_configure.yml
+    # - name: "Step 02: Console bootstrap"
+    #   ansible.builtin.include_tasks: 02_console_bootstrap.yml
     #   loop: "{{ ordered_install_list }}"
     #   loop_control:
     #     loop_var: sheet
-    #   tags: step01
+    #   tags: step02
+
+    - name: "Step 03: Web UI configuration"
+      ansible.builtin.include_tasks: 03_webui_configure.yml
+      loop: "{{ ordered_install_list }}"
+      loop_control:
+        loop_var: sheet
+      tags: step01
