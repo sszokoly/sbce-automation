@@ -54,6 +54,29 @@ def element_exists(driver: WebDriver, by: str, selector: str, timeout: int = WAI
         return False
 
 
+def get_page_error(driver: WebDriver, timeout: int = 3) -> Optional[str]:
+    selectors = [
+        (By.CSS_SELECTOR, "div.error-message"),
+        (By.CSS_SELECTOR, ".error-message"),
+        (By.CSS_SELECTOR, ".alert-danger"),
+        (By.CSS_SELECTOR, ".validation-summary-errors"),
+        (By.XPATH, "//*[contains(@class, 'error') and normalize-space()]")
+    ]
+
+    for by, selector in selectors:
+        try:
+            element = WebDriverWait(driver, timeout).until(
+                EC.visibility_of_element_located((by, selector))
+            )
+            text = element.text.strip()
+            if text:
+                return text
+        except TimeoutException:
+            continue
+
+    return None
+
+
 def has_eula(driver: WebDriver, host: str) -> bool:
     action_url = f"https://{host}/sbc/eula/"
     selector = f"form[action='{action_url}'][method='post']"
@@ -169,7 +192,7 @@ def install_sbce(
     sig_name: str,
     sig_mask: str,
     sig_gw: str,
-    sip_ip: str,
+    sig_ip: str,
     sig_pub_ip: Optional[str] = None,
     dns2: Optional[str] = None,
 ) -> bool:
@@ -208,16 +231,21 @@ def install_sbce(
     select_element = wait_for_clickable(driver, By.NAME, "selInterface")
     Select(select_element).select_by_visible_text(sig_iface)
 
-    sip_ip_input = wait_for_clickable(driver, By.NAME, "txtIP_1")
-    sip_ip_input.clear()
-    sip_ip_input.send_keys(sip_ip)
+    sig_ip_input = wait_for_clickable(driver, By.NAME, "txtIP_1")
+    sig_ip_input.clear()
+    sig_ip_input.send_keys(sig_ip)
 
     if sig_pub_ip:
         pub_ip_input = wait_for_clickable(driver, By.NAME, "txtPublicIP_1")
         pub_ip_input.clear()
         pub_ip_input.send_keys(sig_pub_ip)
 
-    wait_for_clickable(driver, By.ID, "slideForward").click()
+    finish_button = wait_for_clickable(driver, By.ID, "slideForward")
+    finish_button.click()
+
+    page_error = get_page_error(driver, timeout=3)
+    if page_error:
+        raise RuntimeError(f"Install failed: {page_error}")
 
     driver.close()
     driver.switch_to.window(original_window)
@@ -299,6 +327,11 @@ def add_node(
 
     finish_button = wait_for_clickable(driver, By.ID, "slideForward")
     finish_button.click()
+
+    page_error = get_page_error(driver, timeout=3)
+    if page_error:
+        raise RuntimeError(f"Add failed: {page_error}")
+
     WebDriverWait(driver, WAIT_TIMEOUT).until(EC.staleness_of(finish_button))
 
 
@@ -355,9 +388,10 @@ def do_install_sbce(
     sig_name: str,
     sig_mask: str,
     sig_gw: str,
-    sip_ip: str,
+    sig_ip: str,
     sig_pub_ip: Optional[str] = None,
     dns2: Optional[str] = None,
+    target_host: Optional[str] = None,
 ) -> int:
     driver = webdriver.Chrome(options=chrome_options)
     try:
@@ -367,11 +401,11 @@ def do_install_sbce(
             if has_login_failed(driver):
                 _log("Login failed with the provided credentials.")
                 return 1
-        install_link = is_sbce_installable(driver, host)
+        install_link = is_sbce_installable(driver, target_host or host)
         if install_link is not None:
             install_sbce(
                 install_link, driver, appname, dns,
-                sig_iface, sig_name, sig_mask, sig_gw, sip_ip,
+                sig_iface, sig_name, sig_mask, sig_gw, sig_ip,
                 sig_pub_ip=sig_pub_ip, dns2=dns2,
             )
             _log(f"SBCE '{appname}' installed and commissioned.")
@@ -379,7 +413,8 @@ def do_install_sbce(
             _log("No installable SBCE found.")
         return 0
     except Exception as e:
-        _log(f"Install failed: {e}")
+        msg = str(e)
+        _log(msg if msg.startswith("Install failed:") else f"Install failed: {msg}")
         return 1
     finally:
         driver.quit()
@@ -428,7 +463,7 @@ def do_add_node(
     return 1
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Automated initial setup of Avaya SBCE via web interface."
     )
@@ -452,8 +487,9 @@ def parse_args() -> argparse.Namespace:
     install.add_argument("--sig-name",   help="Signaling interface name (e.g. A1_internal)")
     install.add_argument("--sig-mask",   help="Signaling interface subnet mask")
     install.add_argument("--sig-gw",     help="Signaling interface default gateway")
-    install.add_argument("--sip-ip",     help="SIP signaling IP address")
+    install.add_argument("--sig-ip",     help="SIP signaling IP address")
     install.add_argument("--sig-pub-ip", help="Public IP for signaling interface")
+    install.add_argument("--target-host", help="Installable SBCE management IP or hostname when different from EMS host")
 
     add = parser.add_argument_group("--add-node arguments")
     add.add_argument("--type",  help="Node type: sbce, ems, or ha")
@@ -462,7 +498,7 @@ def parse_args() -> argparse.Namespace:
     add.add_argument("--name2", help="Secondary node name (HA only)")
     add.add_argument("--ip2",   help="Secondary node management IP (HA only)")
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _require(args: argparse.Namespace, *names: str) -> None:
@@ -485,7 +521,7 @@ if __name__ == "__main__":
     #     "--sig-name",       "A1_internal",
     #     "--sig-mask",       "255.255.255.0",
     #     "--sig-gw",         "192.168.122.1",
-    #     "--sip-ip",         "192.168.122.11",
+    #     "--sig-ip",         "192.168.122.11",
     #     "--sig-pub-ip",     "142.219.32.2",
     #     "--debug"
     # ]
@@ -515,7 +551,7 @@ if __name__ == "__main__":
 
     elif args.install_sbce:
         _require(args, "ucsec_password", "appname", "dns",
-                 "sig_iface", "sig_name", "sig_mask", "sig_gw", "sip_ip")
+                 "sig_iface", "sig_name", "sig_mask", "sig_gw", "sig_ip")
         rv = do_install_sbce(
             host=args.host,
             ucsec_password=args.ucsec_password,
@@ -525,9 +561,10 @@ if __name__ == "__main__":
             sig_name=args.sig_name,
             sig_mask=args.sig_mask,
             sig_gw=args.sig_gw,
-            sip_ip=args.sip_ip,
+            sig_ip=args.sig_ip,
             sig_pub_ip=args.sig_pub_ip,
             dns2=args.dns2,
+            target_host=args.target_host,
         )
 
     elif args.add_node:

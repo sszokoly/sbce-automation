@@ -1,0 +1,43 @@
+- name: "Deploy and install EMS {{ ems_sheet }}"
+  ansible.builtin.include_tasks:
+    file: run_node_install.yml
+  vars:
+    node_sheet: "{{ ems_sheet }}"
+  tags:
+    - always
+    - step01
+    - step02
+    - step02a
+    - step02b
+    - step02c
+    - step02d
+    - emsbatch1
+
+- name: "Deploy and install child node for EMS {{ ems_sheet }}"
+  ansible.builtin.include_tasks:
+    file: run_node_install.yml
+  vars:
+    node_sheet: "{{ child_sheet }}"
+  loop: "{{ ems_nodes[ems_sheet] | default([]) | flatten(levels=1) }}"
+  loop_control:
+    loop_var: child_sheet
+  tags:
+    - always
+    - step01
+    - step02
+    - step02a
+    - step02b
+    - step02c
+    - step02d
+    - emsbatch2
+
+- name: "Step 03: Web UI configuration for EMS {{ ems_sheet }}"
+  ansible.builtin.include_tasks:
+    file: 03_webui_configuration.yml
+  vars:
+    sheet: "{{ ems_sheet }}"
+  tags:
+    - always
+    - step03
+    - step03a
+    - emsbatch3

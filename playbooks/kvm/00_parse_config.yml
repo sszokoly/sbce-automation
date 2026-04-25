@@ -1,8 +1,12 @@
 - name: "Extract configuration from sbce_config.xlsx"
   read_sbce_config:
     path: "{{ src_path }}"
+  tags:
+    - always
+    - step00
+    - step001
 
-- name: "Create 'ems_nodes' dict with EMS's as keys and list of their SBCE's as values"
+- name: "Create 'ems_nodes' dict with EMS's as keys and list of their SBCE's or secondary EMS's as values"
   vars:
     flat_config: "{{ sbce_config | combine }}"
   ansible.builtin.set_fact:
@@ -14,7 +18,7 @@
         {%- if val.ip0 -%}
           {%- set _ = ns.ip_to_key.update({val.ip0: key}) -%}
         {%- endif -%}
-        {%- if val.apptype in ['EMS', 'EMS+SBCE'] -%}
+        {%- if val.apptype in ['EMS', 'EMS+SBCE'] and val.ems_inst_type | default('primary', true) != 'secondary' -%}
           {%- set _ = ns.ems_map.update({val.ip0: key}) -%}
           {%- set _ = ns.result.update({key: []}) -%}
         {%- endif -%}
@@ -32,12 +36,22 @@
             {%- set _ = ns.result[ems].append([key]) -%}
             {%- set _ = ns.seen.update({key: 1}) -%}
           {%- endif -%}
+        {%- elif val.apptype == 'EMS' and val.ems_inst_type | default('', true) == 'secondary' and val.emsip in ns.ems_map and key not in ns.seen -%}
+          {%- set ems = ns.ems_map[val.emsip] -%}
+          {%- set _ = ns.result[ems].append([key]) -%}
+          {%- set _ = ns.seen.update({key: 1}) -%}
         {%- endif -%}
       {%- endfor -%}
 
       {{ ns.result }}
+  tags:
+    - always
+    - step00
+    - step002
 
 - name: "Create 'ordered_install_list' with sheet names in the order of installation"
+  vars:
+    flat_config: "{{ sbce_config | combine }}"
   ansible.builtin.set_fact:
     ordered_install_list: >-
       {%- set ordered_list = [] -%}
@@ -49,4 +63,46 @@
           {%- endfor -%}
         {%- endfor -%}
       {%- endfor -%}
+      {%- if not ordered_list -%}
+        {%- set ordered_list = flat_config.keys() -%}
+      {%- endif -%}
       {{ ordered_list | from_yaml }}
+  tags:
+    - always
+    - step00
+    - step003
+
+- name: "Create 'coresident_install_list' for EMS+SBCE nodes"
+  vars:
+    flat_config: "{{ sbce_config | combine }}"
+  ansible.builtin.set_fact:
+    coresident_install_list: >-
+      {%- set ordered_list = [] -%}
+      {%- for key, val in flat_config.items() -%}
+        {%- if val.apptype == 'EMS+SBCE' -%}
+          {%- set _ = ordered_list.append(key) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ordered_list | from_yaml }}
+  tags:
+    - always
+    - step00
+    - step004
+
+- name: "Create 'primary_ems_install_list' for EMS batches"
+  vars:
+    flat_config: "{{ sbce_config | combine }}"
+  ansible.builtin.set_fact:
+    primary_ems_install_list: >-
+      {%- set ordered_list = [] -%}
+      {%- for key in ems_nodes.keys() -%}
+        {%- set val = flat_config[key] -%}
+        {%- if val.apptype == 'EMS' and val.ems_inst_type | default('primary', true) != 'secondary' -%}
+          {%- set _ = ordered_list.append(key) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ordered_list | from_yaml }}
+  tags:
+    - always
+    - step00
+    - step005

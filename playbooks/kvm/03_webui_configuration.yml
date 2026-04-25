@@ -1,0 +1,172 @@
+- name: "Create 'args' from the 'sheet'"
+  ansible.builtin.set_fact:
+    args: >-
+      {{ (ansible_facts['sbce_config']
+          | select('contains', sheet)
+          | first)[sheet] }}
+  tags:
+    - always
+    - step03
+    - step03s1
+
+- name: "Install Standalone EMS+SBCE"
+  vars:
+    dns_servers: "{{ (args.dns | default('', true) | string).split(',') | map('trim') | reject('equalto', '') | list }}"
+    install_argv: >-
+      {{
+        [
+          '--install-sbce',
+          '--host', args.ip0,
+          '--ucsec-password', args.ucsecpass,
+          '--appname', args.appname,
+          '--dns', dns_servers[0],
+          '--sig-iface', args.sig_iface,
+          '--sig-name', args.sig_name,
+          '--sig-mask', args.sig_mask,
+          '--sig-gw', args.sig_gw,
+          '--sig-ip', args.sig_ip,
+          '--debug'
+        ]
+        +
+        ([ '--dns2', dns_servers[1] ] if dns_servers | length > 1 else [])
+        +
+        ([ '--sig-pub-ip', args.sig_pub_ip ] if args.sig_pub_ip | default('', true) | string | length > 0 else [])
+      }}
+  sbce_web_bootstrap:
+    argv: "{{ install_argv }}"
+  when:
+    - args.apptype == 'EMS+SBCE'
+    - dns_servers | length > 0
+  delegate_to: localhost
+  no_log: false
+  tags:
+    - step03
+    - step03a
+    - step03a1
+
+- name: Wait 5mins for the SBCE nodes to register
+  vars:
+    flat_config: "{{ ansible_facts['sbce_config'] | combine }}"
+    sbce_install_groups: >-
+      {%- set groups = [] -%}
+      {%- for group in ems_nodes[sheet] | default([]) -%}
+        {%- if flat_config[group[0]].apptype == 'SBCE' -%}
+          {%- set _ = groups.append(group) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ groups | from_yaml }}
+  ansible.builtin.pause:
+    seconds: 300
+  when: sbce_install_groups | length > 0
+  tags:
+    - step03
+    - step03a
+    - step03a2
+
+- name: "Debug Install Single/HA SBCE argv"
+  vars:
+    flat_config: "{{ ansible_facts['sbce_config'] | combine }}"
+    sbce_install_groups: >-
+      {%- set groups = [] -%}
+      {%- for group in ems_nodes[sheet] | default([]) -%}
+        {%- if flat_config[group[0]].apptype == 'SBCE' -%}
+          {%- set _ = groups.append(group) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ groups | from_yaml }}
+    install_node: "{{ flat_config[item[0]] }}"
+    dns_servers: "{{ (install_node.dns | default('', true) | string).split(',') | map('trim') | reject('equalto', '') | list }}"
+    install_argv: >-
+      {{
+        [
+          '--install-sbce',
+          '--host', args.ip0,
+          '--ucsec-password', args.ucsecpass,
+          '--target-host', install_node.ip0,
+          '--appname', install_node.appname,
+          '--dns', dns_servers[0],
+          '--sig-iface', install_node.sig_iface,
+          '--sig-name', install_node.sig_name,
+          '--sig-mask', install_node.sig_mask,
+          '--sig-gw', install_node.sig_gw,
+          '--sig-ip', install_node.sig_ip,
+          '--debug'
+        ]
+        +
+        ([ '--dns2', dns_servers[1] ] if dns_servers | length > 1 else [])
+        +
+        ([ '--sig-pub-ip', install_node.sig_pub_ip ] if install_node.sig_pub_ip | default('', true) | string | length > 0 else [])
+      }}
+    redacted_install_argv: >-
+      {%- set ns = namespace(result=[], redact_next=false) -%}
+      {%- for arg in install_argv -%}
+        {%- if ns.redact_next -%}
+          {%- set _ = ns.result.append('********') -%}
+          {%- set ns.redact_next = false -%}
+        {%- else -%}
+          {%- set _ = ns.result.append(arg) -%}
+          {%- if arg == '--ucsec-password' -%}
+            {%- set ns.redact_next = true -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.result }}
+  ansible.builtin.debug:
+    var: redacted_install_argv
+  loop: "{{ sbce_install_groups }}"
+  loop_control:
+    label: "{{ item | join(' + ') }}"
+  when:
+    - sbce_debug_argv | default(false) | bool
+    - dns_servers | length > 0
+  tags:
+    - step03
+    - step03a
+    - step03a3_debug
+
+- name: "Install Single/HA SBCE nodes"
+  vars:
+    flat_config: "{{ ansible_facts['sbce_config'] | combine }}"
+    sbce_install_groups: >-
+      {%- set groups = [] -%}
+      {%- for group in ems_nodes[sheet] | default([]) -%}
+        {%- if flat_config[group[0]].apptype == 'SBCE' -%}
+          {%- set _ = groups.append(group) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ groups | from_yaml }}
+    install_node: "{{ flat_config[item[0]] }}"
+    dns_servers: "{{ (install_node.dns | default('', true) | string).split(',') | map('trim') | reject('equalto', '') | list }}"
+    install_argv: >-
+      {{
+        [
+          '--install-sbce',
+          '--host', args.ip0,
+          '--ucsec-password', args.ucsecpass,
+          '--target-host', install_node.ip0,
+          '--appname', install_node.appname,
+          '--dns', dns_servers[0],
+          '--sig-iface', install_node.sig_iface,
+          '--sig-name', install_node.sig_name,
+          '--sig-mask', install_node.sig_mask,
+          '--sig-gw', install_node.sig_gw,
+          '--sig-ip', install_node.sig_ip,
+          '--debug'
+        ]
+        +
+        ([ '--dns2', dns_servers[1] ] if dns_servers | length > 1 else [])
+        +
+        ([ '--sig-pub-ip', install_node.sig_pub_ip ] if install_node.sig_pub_ip | default('', true) | string | length > 0 else [])
+      }}
+  sbce_web_bootstrap:
+    argv: "{{ install_argv }}"
+  loop: "{{ sbce_install_groups }}"
+  loop_control:
+    label: "{{ item | join(' + ') }}"
+  when: dns_servers | length > 0
+  delegate_to: localhost
+  no_log: false
+  tags:
+    - step03
+    - step03a
+    - step03a3

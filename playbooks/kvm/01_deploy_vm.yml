@@ -4,11 +4,19 @@
       {{ (ansible_facts['sbce_config']
           | select('contains', sheet)
           | first)[sheet] }}
+  tags:
+    - always
+    - step01
+    - step01s1
 
 - name: Extract basename from SBCE image filename
   ansible.builtin.set_fact:
     filename: "{{ args['ovf'] | basename }}"
   when: args['ovf'] | default('', true) | length > 0
+  tags:
+    - always
+    - step01
+    - step01s2
 
 - name: Create image_file_name from filename
   vars:
@@ -16,6 +24,10 @@
     type: "{{ 'SBCE' if args['apptype'] == 'SBCE' else 'EMS' }}"
   ansible.builtin.set_fact:
     image_filename: "{{ stem }}-{{ type }}-{{ args['vmname'] }}-thick.qcow2"
+  tags:
+    - always
+    - step01
+    - step01s3
 
 - name: Add KVM platform to ansible
   ansible.builtin.add_host:
@@ -27,6 +39,10 @@
     ansible_become_method: sudo
     ansible_become_password: "{{ args['platform_password'] }}"
     ansible_port: 22
+  tags:
+    - always
+    - step01
+    - step01s4
 
 # - name: Create /var/lib/libvirt/staging folder if it does not exist
 #   ansible.builtin.file:
@@ -37,11 +53,19 @@
 #     group: "{{ args['platform_username'] }}"
 #   become: yes
 #   delegate_to: kvm_host
+#   tags:
+#     - always
+#     - step01
+#     - step01s5
 
 - name: Set ansible_remote_tmp after staging folder exists
   ansible.builtin.add_host:
     hostname: "kvm_host"
     ansible_remote_tmp: /var/lib/libvirt/staging/
+  tags:
+    - always
+    - step01
+    - step01s6
 
 # - name: Check image exists on controller
 #   ansible.builtin.stat:
@@ -51,6 +75,10 @@
 #   run_once: true
 #   become: false
 #   when: args['ovf'] | default('', true) | length > 0
+#   tags:
+#     - always
+#     - step01
+#     - step01s7
 
 # - name: Fail if image path is missing on controller
 #   ansible.builtin.fail:
@@ -59,6 +87,10 @@
 #   when:
 #     - args['ovf'] | default('', true) | length > 0
 #     - not ovf_local_stat.stat.exists
+#   tags:
+#     - always
+#     - step01
+#     - step01s8
 
 # - name: Check if image already exists on KVM host
 #   ansible.builtin.stat:
@@ -66,6 +98,10 @@
 #   register: ovf_remote_stat
 #   delegate_to: kvm_host
 #   when: args['ovf'] | default('', true) | length > 0
+#   tags:
+#     - always
+#     - step01
+#     - step01s9
 
 # - name: Copy SBCE image to KVM host
 #   ansible.builtin.copy:
@@ -75,74 +111,102 @@
 #   when:
 #     - args['ovf'] | default('', true) | length > 0
 #     - not ovf_remote_stat.stat.exists
+#   tags:
+#     - always
+#     - step01
+#     - step01s10
 
-# - name: Convert qcow2 image to thick-provisioned (~6mins)
-#   ansible.builtin.shell:
-#     cmd: qemu-img convert -f qcow2 -O qcow2 -o preallocation=full {{ filename }} {{ image_filename }}
-#     chdir: "/var/lib/libvirt/staging/"
-#   become: yes
-#   delegate_to: kvm_host
+- name: Convert qcow2 image to thick-provisioned, this may take a few minutes
+  ansible.builtin.shell:
+    cmd: qemu-img convert -f qcow2 -O qcow2 -o preallocation=full {{ filename }} {{ image_filename }}
+    chdir: "/var/lib/libvirt/staging/"
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b1
 
-# - name: "Copy {{ image_filename }} to /var/lib/libvirt/images folder"
-#   ansible.builtin.command:
-#     cmd: cp --reflink /var/lib/libvirt/staging/{{ image_filename }} /var/lib/libvirt/images/{{ image_filename }}
-#     creates: /var/lib/libvirt/images/{{ image_filename }}
-#   become: yes
-#   delegate_to: kvm_host
+- name: "Copy {{ image_filename }} to /var/lib/libvirt/images folder"
+  ansible.builtin.command:
+    cmd: cp --reflink /var/lib/libvirt/staging/{{ image_filename }} /var/lib/libvirt/images/{{ image_filename }}
+    creates: /var/lib/libvirt/images/{{ image_filename }}
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b2
 
-# - name: "Set ownership and permissions"
-#   ansible.builtin.file:
-#     path: /var/lib/libvirt/images/{{ image_filename }}
-#     owner: qemu
-#     group: qemu
-#     mode: '0640'
-#     state: file
-#   become: yes
-#   delegate_to: kvm_host
+- name: "Set ownership and permissions"
+  ansible.builtin.file:
+    path: /var/lib/libvirt/images/{{ image_filename }}
+    owner: qemu
+    group: qemu
+    mode: '0640'
+    state: file
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b3
 
-# - name: Generate VM XML (do not start)
-#   ansible.builtin.shell: >
-#     virt-install
-#     --connect qemu:///system
-#     --name "{{ args['vmname'] }}"
-#     --memory 16384
-#     --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1
-#     --disk /var/lib/libvirt/images/{{ image_filename }},bus=virtio,cache=directsync,boot.order=1
-#     --os-variant rhel8.10
-#     --boot uefi
-#     --cpu host-model
-#     --network bridge="{{ args['M1'] }}"
-#     --network bridge="{{ args['B1'] }}"
-#     --network bridge="{{ args['A2'] }}"
-#     --network bridge="{{ args['B2'] }}"
-#     --network bridge="{{ args['A1'] }}"
-#     --network bridge="{{ args['M2'] }}"
-#     --import
-#     --print-xml > /tmp/{{ args['vmname'] }}.xml
-#   args:
-#     creates: "/tmp/{{ args['vmname'] }}.xml"
-#   become: yes
-#   delegate_to: kvm_host
+- name: Generate VM XML (do not start)
+  ansible.builtin.shell: >
+    virt-install
+    --connect qemu:///system
+    --name "{{ args['vmname'] }}"
+    --memory 8192
+    --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1
+    --disk /var/lib/libvirt/images/{{ image_filename }},bus=virtio,cache=directsync,boot.order=1
+    --os-variant rhel8.10
+    --boot uefi
+    --cpu host-model
+    --graphics vnc,listen=0.0.0.0
+    {% for key in ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] if args[key] is not none %}
+    --network bridge="{{ args[key] }}"
+    {% endfor %}
+    --import
+    --print-xml > /tmp/{{ args['vmname'] }}.xml
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b4
 
-# - name: Define VM (still powered off)
-#   ansible.builtin.command: virsh -c qemu:///system define "/tmp/{{ args['vmname'] }}.xml"
-#   become: yes
-#   delegate_to: kvm_host
+- name: Define VM (still powered off)
+  ansible.builtin.command: virsh -c qemu:///system define "/tmp/{{ args['vmname'] }}.xml"
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b5
 
-# - name: Enable autostart
-#   ansible.builtin.command: virsh -c qemu:///system autostart "{{ args['vmname'] }}"
-#   become: yes
-#   delegate_to: kvm_host
+- name: Enable autostart
+  ansible.builtin.command: virsh -c qemu:///system autostart "{{ args['vmname'] }}"
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b6
 
-# - name: Wait 5 seconds
-#   ansible.builtin.pause:
-#     seconds: 5
+- name: Wait 5 seconds
+  ansible.builtin.pause:
+    seconds: 5
+  tags:
+    - step01
+    - step01b
+    - step01b7
 
-# - name: Power on VM
-#   ansible.builtin.command: virsh -c qemu:///system start "{{ args['vmname'] }}"
-#   become: yes
-#   delegate_to: kvm_host
-
-# - name: Wait 180 seconds for the initialization to complete
-#   ansible.builtin.pause:
-#     seconds: 180
+- name: Power on VM
+  ansible.builtin.command: virsh -c qemu:///system start "{{ args['vmname'] }}"
+  become: yes
+  delegate_to: kvm_host
+  tags:
+    - step01
+    - step01b
+    - step01b8

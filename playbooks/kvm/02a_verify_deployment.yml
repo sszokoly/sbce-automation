@@ -1,0 +1,82 @@
+- name: Wait 4mins for VM to boot up
+  ansible.builtin.pause:
+    seconds: 240
+  tags:
+    - step02
+    - step02a
+    - step02a1
+
+- name: Resolve screenshot paths
+  vars:
+    requested_screenshot_path: "{{ screenshot_path | default('data/screenshots/' ~ args['vmname'] ~ '.png') }}"
+    resolved_screenshot_path: >-
+      {{ requested_screenshot_path
+         if requested_screenshot_path.startswith('/')
+         else execution_dir ~ '/' ~ requested_screenshot_path }}
+  ansible.builtin.set_fact:
+    screenshot_png_path: "{{ resolved_screenshot_path }}"
+    screenshot_text_base_path: "{{ resolved_screenshot_path | regex_replace('\\.png$', '') }}"
+    screenshot_text_path: "{{ (resolved_screenshot_path | regex_replace('\\.png$', '')) ~ '.txt' }}"
+  tags:
+    - step02
+    - step02a
+    - step02a2
+
+- name: Get VM VNC display
+  ansible.builtin.command: virsh -c qemu:///system domdisplay "{{ args['vmname'] }}"
+  register: vm_domdisplay
+  changed_when: false
+  become: true
+  delegate_to: kvm_host
+  tags:
+    - step02
+    - step02a
+    - step02a3
+
+- name: Resolve VM VNC endpoint
+  ansible.builtin.set_fact:
+    screenshot_vnc_host: "{{ args['platform_address'] }}"
+    screenshot_vnc_display: "{{ vm_domdisplay.stdout | regex_search(':(\\d+)$') | regex_replace('^:', '') | int }}"
+  tags:
+    - step02
+    - step02a
+    - step02a4
+
+- name: Take KVM console screenshot
+  kvm_console_screenshot:
+    method: vnc
+    host: "{{ screenshot_vnc_host }}"
+    display: "{{ screenshot_vnc_display }}"
+    path: "{{ screenshot_png_path }}"
+    timeout: 10
+  delegate_to: localhost
+  tags:
+    - step02
+    - step02a
+    - step02a5
+
+- name: Convert screenshot to text
+  ansible.builtin.command: tesseract "{{ screenshot_png_path }}" "{{ screenshot_text_base_path }}"
+  delegate_to: localhost
+  tags:
+    - step02
+    - step02a
+    - step02a6
+
+- name: Read screenshot test file
+  ansible.builtin.slurp:
+    src: "{{ screenshot_text_path }}"
+  register: screenshot
+  tags:
+    - step02
+    - step02a
+    - step02a7
+
+- name: Fail if screenshot does not contain 'Enter your choice'
+  ansible.builtin.fail:
+    msg: "Image file not found on controller: {{ args['ovf'] }}"
+  when: "'Enter your choice' not in (screenshot.content | b64decode )"
+  tags:
+    - step02
+    - step02a
+    - step02a8

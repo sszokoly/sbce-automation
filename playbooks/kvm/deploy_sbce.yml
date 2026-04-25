@@ -4,7 +4,7 @@
 
   vars:
     execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
-    sleep_time: 3
+    sleep_time: 2
 
   tasks:
     - name: "Fail if 'src' file argument is not in --extra-vars"
@@ -12,40 +12,67 @@
         msg: "'src' argument is missing"
       when: src is not defined
       changed_when: false
+      tags:
+        - always
+        - setup1
 
     - name: "Expand 'src' to 'src_path'"
       ansible.builtin.set_fact:
         src_path: >-
           {{ src if src.startswith('/')
              else (execution_dir ~ '/' ~ src) | realpath }}
+      tags:
+        - always
+        - setup2
 
     - name: "Verify 'src_path' exists"
       ansible.builtin.stat:
         path: "{{ src_path }}"
       register: src_stat_result
       failed_when: not src_stat_result.stat.exists
+      tags:
+        - always
+        - setup3
 
     - name: "Step 00: Parse configuration"
       ansible.builtin.include_tasks: 00_parse_config.yml
-      tags: step00
+      tags:
+        - always
+        - step00
+        - step000
 
-    - name: "Step 01: Deploy VM"
-      ansible.builtin.include_tasks: 01_deploy_vm.yml
-      loop: "{{ ordered_install_list }}"
+    - name: "Deploy, install, and configure EMS+SBCE nodes"
+      ansible.builtin.include_tasks:
+        file: run_full_node.yml
+      loop: "{{ coresident_install_list }}"
       loop_control:
-        loop_var: sheet
-      tags: step01
+        loop_var: node_sheet
+      tags:
+        - always
+        - step01
+        - step02
+        - step02a
+        - step02b
+        - step02c
+        - step02d
+        - step03
+        - step03a
+        - coresident1
 
-    # - name: "Step 02: Console bootstrap"
-    #   ansible.builtin.include_tasks: 02_console_bootstrap.yml
-    #   loop: "{{ ordered_install_list }}"
-    #   loop_control:
-    #     loop_var: sheet
-    #   tags: step02
-
-    - name: "Step 03: Web UI configuration"
-      ansible.builtin.include_tasks: 03_webui_configure.yml
-      loop: "{{ ordered_install_list }}"
+    - name: "Deploy EMS batches"
+      ansible.builtin.include_tasks:
+        file: run_ems_batch.yml
+      loop: "{{ primary_ems_install_list }}"
       loop_control:
-        loop_var: sheet
-      tags: step01
+        loop_var: ems_sheet
+      tags:
+        - always
+        - step01
+        - step02
+        - step02a
+        - step02b
+        - step02c
+        - step02d
+        - step03
+        - step03a
+        - emsbatches1

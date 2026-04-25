@@ -1,0 +1,25 @@
+- name: "Step 01: Deploy VM for {{ node_sheet }}"
+  ansible.builtin.include_tasks:
+    file: 01_deploy_vm.yml
+  vars:
+    sheet: "{{ node_sheet }}"
+  tags:
+    - always
+    - step01
+    - step01a
+    - step01b
+    - nodeinstall1
+
+- name: "Step 02: Install application for {{ node_sheet }}"
+  ansible.builtin.include_tasks:
+    file: 02_install_application.yml
+  vars:
+    sheet: "{{ node_sheet }}"
+  tags:
+    - always
+    - step02
+    - step02a
+    - step02b
+    - step02c
+    - step02d
+    - nodeinstall2

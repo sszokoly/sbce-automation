@@ -213,6 +213,7 @@ uv.lock
 data/ova/*.ova
 data/ova/*.qcow2
 data/ovf/*.ovf
+data/screenshots/*
 data/utils/.env
 inventories/prod/*.yaml
 inventories/prod/*.yml

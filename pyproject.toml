@@ -12,4 +12,5 @@ dependencies = [
     "pyvmomi>=8.0.0,<9.0.0",
     "requests>=2.32.5",
     "selenium>=4.36.0",
+    "vncdotool>=1.2.0",
 ]

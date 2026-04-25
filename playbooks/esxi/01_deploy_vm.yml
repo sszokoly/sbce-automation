@@ -59,6 +59,6 @@
     state: powered-on
     validate_certs: false
 
-- name: Wait 240 seconds for VM to boot up
+- name: Wait 4mins for VM to boot up
   ansible.builtin.pause:
     seconds: 240
