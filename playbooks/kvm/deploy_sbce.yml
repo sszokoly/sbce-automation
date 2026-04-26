@@ -35,7 +35,8 @@
         - setup3
 
     - name: "Step 00: Parse configuration"
-      ansible.builtin.include_tasks: 00_parse_config.yml
+      ansible.builtin.include_tasks:
+        file: includes/00_parse_config.yml
       tags:
         - always
         - step00
@@ -43,36 +44,40 @@
 
     - name: "Deploy, install, and configure EMS+SBCE nodes"
       ansible.builtin.include_tasks:
-        file: run_full_node.yml
+        file: includes/run_full_node.yml
       loop: "{{ coresident_install_list }}"
       loop_control:
         loop_var: node_sheet
       tags:
         - always
         - step01
+        - step01a
+        - step01b
+        - step01c
         - step02
         - step02a
         - step02b
         - step02c
-        - step02d
         - step03
         - step03a
         - coresident1
 
     - name: "Deploy EMS batches"
       ansible.builtin.include_tasks:
-        file: run_ems_batch.yml
+        file: includes/run_ems_batch.yml
       loop: "{{ primary_ems_install_list }}"
       loop_control:
         loop_var: ems_sheet
       tags:
         - always
         - step01
+        - step01a
+        - step01b
+        - step01c
         - step02
         - step02a
         - step02b
         - step02c
-        - step02d
         - step03
         - step03a
         - emsbatches1

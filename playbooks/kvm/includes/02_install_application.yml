@@ -9,37 +9,29 @@
     - step02
     - step02s1
 
-- name: "Step 02a: Verify deployment"
-  ansible.builtin.include_tasks: 02a_verify_deployment.yml
+- name: "Step 02a: Console bootstrap"
+  ansible.builtin.include_tasks: 02a_console_bootstrap.yml
   tags:
     - always
     - step02
     - step02a
     - step02a0
 
-- name: "Step 02b: Console bootstrap"
-  ansible.builtin.include_tasks: 02b_console_bootstrap.yml
+- name: "Step 02b: Post bootstrap configuration"
+  ansible.builtin.include_tasks: 02b_post_bootstrap_configuration.yml
   tags:
     - always
     - step02
     - step02b
     - step02b0
 
-- name: "Step 02c: Post bootstrap configuration"
-  ansible.builtin.include_tasks: 02c_post_bootstrap_configuration.yml
-  tags:
-    - always
-    - step02
-    - step02c
-    - step02c0
-
-- name: "Step 02d: WebUI bootstrap"
-  ansible.builtin.include_tasks: 02d_webui_bootstrap.yml
+- name: "Step 02c: WebUI bootstrap"
+  ansible.builtin.include_tasks: 02c_webui_bootstrap.yml
   when:
     - args.apptype in ('EMS', 'EMS+SBCE')
     - args.ems_inst_type | default('primary', true) != 'secondary'
   tags:
     - always
     - step02
-    - step02d
-    - step02d0
+    - step02c
+    - step02c0

@@ -5,8 +5,8 @@
     no_enter: true
   tags:
     - step02
-    - step02b
-    - step02b1
+    - step02a
+    - step02a1
 
 - name: Send ENTER and wait 10 seconds
   kvm_guest_sendkey:
@@ -18,8 +18,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b2
+    - step02a
+    - step02a2
 
 - name: "IP Mode: {{ args.ipmode }}"
   kvm_guest_sendkey:
@@ -33,8 +33,8 @@
     - args.ipmode | string | length > 0
   tags:
     - step02
-    - step02b
-    - step02b3
+    - step02a
+    - step02a3
 
 - name: Send ipmode ENTER
   kvm_guest_sendkey:
@@ -46,8 +46,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b4
+    - step02a
+    - step02a4
 
 - name: "Appliance Type: {{ args.apptype }}"
   kvm_guest_sendkey:
@@ -57,8 +57,8 @@
   when: args.apptype is defined and (args.apptype | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b5
+    - step02a
+    - step02a5
 
 - name: Send apptype ENTER
   kvm_guest_sendkey:
@@ -70,8 +70,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b6
+    - step02a
+    - step02a6
 
 - name: "Network Passphrase: {{ args.nwpass }}"
   kvm_guest_sendkey:
@@ -83,8 +83,8 @@
     - args.nwpass
   tags:
     - step02
-    - step02b
-    - step02b7
+    - step02a
+    - step02a7
 
 - name: Send nwpass ENTER
   kvm_guest_sendkey:
@@ -96,8 +96,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b8
+    - step02a
+    - step02a8
 
 - name: "Appliance Name: {{ args.appname }}"
   kvm_guest_sendkey:
@@ -107,8 +107,8 @@
   when: args.appname is defined and (args.appname | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b9
+    - step02a
+    - step02a9
 
 - name: Send appname ENTER
   kvm_guest_sendkey:
@@ -120,8 +120,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b10
+    - step02a
+    - step02a10
 
 - name: "Installation Type: {{ args.ems_inst_type }}"
   kvm_guest_sendkey:
@@ -133,8 +133,8 @@
     - args.ems_inst_type
   tags:
     - step02
-    - step02b
-    - step02b11
+    - step02a
+    - step02a11
 
 - name: Send ems_inst_type ENTER
   kvm_guest_sendkey:
@@ -149,8 +149,8 @@
     - args.ems_inst_type
   tags:
     - step02
-    - step02b
-    - step02b12
+    - step02a
+    - step02a12
 
 - name: "Management IP address: {{ args.ip0 }}"
   kvm_guest_sendkey:
@@ -160,8 +160,8 @@
   when: args.ip0 is defined and (args.ip0 | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b13
+    - step02a
+    - step02a13
 
 - name: Send ip0 ENTER
   kvm_guest_sendkey:
@@ -173,8 +173,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b14
+    - step02a
+    - step02a14
 
 - name: "Management subnet mask: {{ args.netmask0 }}"
   kvm_guest_sendkey:
@@ -184,8 +184,8 @@
   when: args.netmask0 is defined and (args.netmask0 | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b15
+    - step02a
+    - step02a15
 
 - name: Send netmask0 ENTER
   kvm_guest_sendkey:
@@ -197,8 +197,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b16
+    - step02a
+    - step02a16
 
 - name: "Management Gateway IP address (ipv4): {{ args.gateway }}"
   kvm_guest_sendkey:
@@ -208,8 +208,8 @@
   when: args.gateway is defined and (args.gateway | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b17
+    - step02a
+    - step02a17
 
 - name: Send gateway ENTER
   kvm_guest_sendkey:
@@ -221,8 +221,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b18
+    - step02a
+    - step02a18
 
 - name: "Management IP address (ipv6): {{ args.ipv6address0 }}"
   kvm_guest_sendkey:
@@ -232,8 +232,8 @@
   when: args.ipv6address0 is defined and (args.ipv6address0 | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b19
+    - step02a
+    - step02a19
 
 - name: Send ipv6address0 ENTER
   kvm_guest_sendkey:
@@ -245,8 +245,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b20
+    - step02a
+    - step02a20
 
 - name: "Management subnet network prefix length: {{ args.ipv6prefix0 }}"
   kvm_guest_sendkey:
@@ -256,8 +256,8 @@
   when: args.ipv6prefix0 is defined and (args.ipv6prefix0 | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b21
+    - step02a
+    - step02a21
 
 - name: Send ipv6prefix0 ENTER
   kvm_guest_sendkey:
@@ -269,8 +269,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b22
+    - step02a
+    - step02a22
 
 - name: "Management Gateway IP Address (ipv6): {{ args.ipv6gateway }}"
   kvm_guest_sendkey:
@@ -280,8 +280,8 @@
   when: args.ipv6gateway is defined and (args.ipv6gateway | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b23
+    - step02a
+    - step02a23
 
 - name: Send ipv6gateway ENTER
   kvm_guest_sendkey:
@@ -293,8 +293,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b24
+    - step02a
+    - step02a24
 
 - name: "EMS IP address (ipv4): {{ args.emsip }}"
   kvm_guest_sendkey:
@@ -306,8 +306,8 @@
     - args.emsip is defined and (args.emsip | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b25
+    - step02a
+    - step02a25
 
 - name: Send args.emsip ENTER
   kvm_guest_sendkey:
@@ -322,8 +322,8 @@
     - args.emsip is defined and (args.emsip | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b26
+    - step02a
+    - step02a26
 
 - name: "EMS IP address (ipv6): {{ args.emsip_v6 }}"
   kvm_guest_sendkey:
@@ -335,8 +335,8 @@
     - args.emsip_v6 is defined and (args.emsip_v6 | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b27
+    - step02a
+    - step02a27
 
 - name: Send args.emsip_v6 ENTER
   kvm_guest_sendkey:
@@ -351,8 +351,8 @@
     - args.emsip_v6 is defined and (args.emsip_v6 | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b28
+    - step02a
+    - step02a28
 
 - name: "NTP Server IP Address (ipv4): 127.127.1.0"
   kvm_guest_sendkey:
@@ -361,8 +361,8 @@
       - ENTER
   tags:
     - step02
-    - step02b
-    - step02b29
+    - step02a
+    - step02a29
 
 - name: "NTP Server IP Address (ipv6):"
   kvm_guest_sendkey:
@@ -371,8 +371,8 @@
       - ENTER
   tags:
     - step02
-    - step02b
-    - step02b30
+    - step02a
+    - step02a30
 
 - name: "List of DNS Servers: {{ args.dns }}"
   kvm_guest_sendkey:
@@ -382,8 +382,8 @@
   when: args.dns is defined and (args.dns | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b31
+    - step02a
+    - step02a31
 
 - name: Send dns ENTER
   kvm_guest_sendkey:
@@ -395,8 +395,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b32
+    - step02a
+    - step02a32
 
 - name: "Domain Suffix: {{ args.domain_suffix }}"
   kvm_guest_sendkey:
@@ -406,8 +406,8 @@
   when: args.domain_suffix is defined and (args.domain_suffix | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b33
+    - step02a
+    - step02a33
 
 - name: Send domain_suffix ENTER
   kvm_guest_sendkey:
@@ -419,8 +419,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b34
+    - step02a
+    - step02a34
 
 - name: "Enter 'Y' if the above infirmation is correct: Y"
   kvm_guest_sendkey:
@@ -430,8 +430,8 @@
     sleep_time: "{{ sleep_time }}"
   tags:
     - step02
-    - step02b
-    - step02b35
+    - step02a
+    - step02a35
 
 - name: Send confirmation ENTER
   kvm_guest_sendkey:
@@ -443,8 +443,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b36
+    - step02a
+    - step02a36
 
 - name: "First and Last Name: {{ args.first_last_name }}"
   kvm_guest_sendkey:
@@ -454,8 +454,8 @@
   when: args.first_last_name is defined and (args.first_last_name | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b37
+    - step02a
+    - step02a37
 
 - name: Send first_last_name ENTER
   kvm_guest_sendkey:
@@ -467,8 +467,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b38
+    - step02a
+    - step02a38
 
 - name: "Organizational Unit: {{ args.organizational_unit }}"
   kvm_guest_sendkey:
@@ -478,8 +478,8 @@
   when: args.organizational_unit is defined and (args.organizational_unit | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b39
+    - step02a
+    - step02a39
 
 - name: Send organizational_unit ENTER
   kvm_guest_sendkey:
@@ -491,8 +491,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b40
+    - step02a
+    - step02a40
 
 - name: "Organization: {{ args.organization }}"
   kvm_guest_sendkey:
@@ -502,8 +502,8 @@
   when: args.organization is defined and (args.organization | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b41
+    - step02a
+    - step02a41
 
 - name: Send organization ENTER
   kvm_guest_sendkey:
@@ -515,8 +515,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b42
+    - step02a
+    - step02a42
 
 - name: "City or Locality: {{ args.locality }}"
   kvm_guest_sendkey:
@@ -526,8 +526,8 @@
   when: args.locality is defined and (args.locality | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b43
+    - step02a
+    - step02a43
 
 - name: Send locality ENTER
   kvm_guest_sendkey:
@@ -539,8 +539,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b44
+    - step02a
+    - step02a44
 
 - name: "State or Province: {{ args.state_province }}"
   kvm_guest_sendkey:
@@ -550,8 +550,8 @@
   when: args.state_province is defined and (args.state_province | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b45
+    - step02a
+    - step02a45
 
 - name: Send state_province ENTER
   kvm_guest_sendkey:
@@ -563,8 +563,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b46
+    - step02a
+    - step02a46
 
 - name: "Country Code ( 2 letter code ): {{ args.country }}"
   kvm_guest_sendkey:
@@ -574,8 +574,8 @@
   when: args.country is defined and (args.country | string | length) > 0
   tags:
     - step02
-    - step02b
-    - step02b47
+    - step02a
+    - step02a47
 
 - name: Send country ENTER
   kvm_guest_sendkey:
@@ -587,8 +587,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b48
+    - step02a
+    - step02a48
 
 - name: "Enter 'Y' if the above infirmation is correct: Y"
   kvm_guest_sendkey:
@@ -598,8 +598,8 @@
     sleep_time: "{{ sleep_time }}"
   tags:
     - step02
-    - step02b
-    - step02b49
+    - step02a
+    - step02a49
 
 - name: Send confirmation ENTER
   kvm_guest_sendkey:
@@ -611,8 +611,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b50
+    - step02a
+    - step02a50
 
 - name: "Please select a continent or ocean (11 = none): 11"
   kvm_guest_sendkey:
@@ -621,8 +621,8 @@
     no_enter: true
   tags:
     - step02
-    - step02b
-    - step02b51
+    - step02a
+    - step02a51
 
 - name: Confirm continent (default Yes)
   kvm_guest_sendkey:
@@ -634,8 +634,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b52
+    - step02a
+    - step02a52
 
 - name: "Please enter the desired value of the TZ environment variable: GMT-4"
   kvm_guest_sendkey:
@@ -644,8 +644,8 @@
     no_enter: true
   tags:
     - step02
-    - step02b
-    - step02b53
+    - step02a
+    - step02a53
 
 - name: Confirm timezone (default Yes)
   kvm_guest_sendkey:
@@ -657,8 +657,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b54
+    - step02a
+    - step02a54
 
 - name: "Is the above information OK? (1 Yes, 2 No): 1"
   kvm_guest_sendkey:
@@ -667,8 +667,8 @@
     no_enter: true
   tags:
     - step02
-    - step02b
-    - step02b55
+    - step02a
+    - step02a55
 
 - name: Send ENTER and wait 90 seconds
   kvm_guest_sendkey:
@@ -680,8 +680,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b56
+    - step02a
+    - step02a56
 
 - name: "New Password for 'root' user: {{ args.rootpass }}"
   kvm_guest_sendkey:
@@ -692,8 +692,8 @@
   no_log: true
   tags:
     - step02
-    - step02b
-    - step02b57
+    - step02a
+    - step02a57
 
 - name: Send rootpass ENTER
   kvm_guest_sendkey:
@@ -705,8 +705,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b58
+    - step02a
+    - step02a58
 
 - name: "Retype new password for 'root' user: {{ args.rootpass }}"
   kvm_guest_sendkey:
@@ -717,8 +717,8 @@
   no_log: true
   tags:
     - step02
-    - step02b
-    - step02b59
+    - step02a
+    - step02a59
 
 - name: Send rootpass ENTER
   kvm_guest_sendkey:
@@ -730,8 +730,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b60
+    - step02a
+    - step02a60
 
 - name: "New Password for 'ipcs' user: {{ args.ipcspass }}"
   kvm_guest_sendkey:
@@ -742,8 +742,8 @@
   no_log: true
   tags:
     - step02
-    - step02b
-    - step02b61
+    - step02a
+    - step02a61
 
 - name: Send ipcspass ENTER
   kvm_guest_sendkey:
@@ -755,8 +755,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b62
+    - step02a
+    - step02a62
 
 - name: "Retype new password for 'ipcs' user: {{ args.ipcspass }}"
   kvm_guest_sendkey:
@@ -767,8 +767,8 @@
   no_log: true
   tags:
     - step02
-    - step02b
-    - step02b63
+    - step02a
+    - step02a63
 
 - name: Send ipcspass ENTER
   kvm_guest_sendkey:
@@ -780,8 +780,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b64
+    - step02a
+    - step02a64
 
 - name: "New Password for 'grub' user: {{ args.grubpass }}"
   kvm_guest_sendkey:
@@ -792,8 +792,8 @@
   no_log: true
   tags:
     - step02
-    - step02b
-    - step02b65
+    - step02a
+    - step02a65
 
 - name: Send grubpass ENTER
   kvm_guest_sendkey:
@@ -805,8 +805,8 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b66
+    - step02a
+    - step02a66
 
 - name: "Retype new password for 'grub' user: {{ args.grubpass }}"
   kvm_guest_sendkey:
@@ -817,8 +817,8 @@
   no_log: true
   tags:
     - step02
-    - step02b
-    - step02b67
+    - step02a
+    - step02a67
 
 - name: Send grubpass ENTER
   kvm_guest_sendkey:
@@ -830,5 +830,5 @@
   changed_when: false
   tags:
     - step02
-    - step02b
-    - step02b68
+    - step02a
+    - step02a68

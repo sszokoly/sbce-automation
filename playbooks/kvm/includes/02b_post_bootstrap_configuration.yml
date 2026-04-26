@@ -11,24 +11,24 @@
   no_log: true
   tags:
     - step02
-    - step02c
-    - step02c1
+    - step02b
+    - step02b1
 
 - name: Wait 4 mins for the initialization to complete
   ansible.builtin.pause:
     seconds: 240
   tags:
     - step02
-    - step02c
-    - step02c2
+    - step02b
+    - step02b2
 
 - name: "Ansible ping to {{ args.hostname }}"
   ansible.builtin.ping:
   delegate_to: "{{ args.hostname | default(args.vmname) }}"
   tags:
     - step02
-    - step02c
-    - step02c3
+    - step02b
+    - step02b3
 
 - name: "Update timezone"
   become: yes
@@ -37,8 +37,8 @@
   delegate_to: "{{ args.hostname | default(args.vmname) }}"
   tags:
     - step02
-    - step02c
-    - step02c4
+    - step02b
+    - step02b4
 
 - name: "Extract 1st NTP server"
   ansible.builtin.set_fact:
@@ -47,8 +47,8 @@
   delegate_to: "{{ args.hostname | default(args.vmname) }}"
   tags:
     - step02
-    - step02c
-    - step02c5
+    - step02b
+    - step02b5
 
 - name: "Update NTP server"
   become: yes
@@ -57,8 +57,8 @@
   delegate_to: "{{ args.hostname | default(args.vmname) }}"
   tags:
     - step02
-    - step02c
-    - step02c6
+    - step02b
+    - step02b6
 
 - name: "Disable password aging for 'ipcs' user"
   become: yes
@@ -66,5 +66,5 @@
   delegate_to: "{{ args.hostname | default(args.vmname) }}"
   tags:
     - step02
-    - step02c
-    - step02c7
+    - step02b
+    - step02b7

@@ -4,11 +4,13 @@
   tags:
     - always
     - step01
+    - step01a
+    - step01b
+    - step01c
     - step02
     - step02a
     - step02b
     - step02c
-    - step02d
     - fullnode1
 
 - name: "Step 03: Web UI configuration for {{ node_sheet }}"

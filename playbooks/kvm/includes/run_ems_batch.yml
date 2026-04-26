@@ -6,11 +6,13 @@
   tags:
     - always
     - step01
+    - step01a
+    - step01b
+    - step01c
     - step02
     - step02a
     - step02b
     - step02c
-    - step02d
     - emsbatch1
 
 - name: "Deploy and install child node for EMS {{ ems_sheet }}"
@@ -24,11 +26,13 @@
   tags:
     - always
     - step01
+    - step01a
+    - step01b
+    - step01c
     - step02
     - step02a
     - step02b
     - step02c
-    - step02d
     - emsbatch2
 
 - name: "Step 03: Web UI configuration for EMS {{ ems_sheet }}"

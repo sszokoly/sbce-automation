@@ -8,6 +8,7 @@
     - step01
     - step01a
     - step01b
+    - step01c
     - nodeinstall1
 
 - name: "Step 02: Install application for {{ node_sheet }}"
@@ -21,5 +22,4 @@
     - step02a
     - step02b
     - step02c
-    - step02d
     - nodeinstall2
