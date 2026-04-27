@@ -99,16 +99,28 @@
     - step02a
     - step02a8
 
-- name: "Appliance Name: {{ args.appname }}"
-  kvm_guest_sendkey:
-    name: "{{ args['vmname'] }}"
-    string_send: "{{ args.appname }}"
-    no_enter: true
-  when: args.appname is defined and (args.appname | string | length) > 0
+- name: Set appliance_name # this appname cannot be the same as here during SBCE install
+  ansible.builtin.set_fact:
+    appliance_name: >-
+      {{ args.appname if args.apptype == 'EMS' else args.vmname }}
+  when:
+    - args.appname is defined and (args.appname | string | length) > 0
+    - args.vmname is defined and (args.vmname | string | length) > 0
   tags:
     - step02
     - step02a
     - step02a9
+
+- name: "Appliance Name: {{ appliance_name }}"
+  kvm_guest_sendkey:
+    name: "{{ args['vmname'] }}"
+    string_send: "{{ appliance_name }}"
+    no_enter: true
+  when: appliance_name is defined and (appliance_name | string | length) > 0
+  tags:
+    - step02
+    - step02a
+    - step02a10
 
 - name: Send appname ENTER
   kvm_guest_sendkey:
@@ -121,7 +133,7 @@
   tags:
     - step02
     - step02a
-    - step02a10
+    - step02a11
 
 - name: "Installation Type: {{ args.ems_inst_type }}"
   kvm_guest_sendkey:
@@ -134,7 +146,7 @@
   tags:
     - step02
     - step02a
-    - step02a11
+    - step02a12
 
 - name: Send ems_inst_type ENTER
   kvm_guest_sendkey:
@@ -150,7 +162,7 @@
   tags:
     - step02
     - step02a
-    - step02a12
+    - step02a13
 
 - name: "Management IP address: {{ args.ip0 }}"
   kvm_guest_sendkey:
@@ -161,7 +173,7 @@
   tags:
     - step02
     - step02a
-    - step02a13
+    - step02a14
 
 - name: Send ip0 ENTER
   kvm_guest_sendkey:
@@ -174,7 +186,7 @@
   tags:
     - step02
     - step02a
-    - step02a14
+    - step02a15
 
 - name: "Management subnet mask: {{ args.netmask0 }}"
   kvm_guest_sendkey:
@@ -185,7 +197,7 @@
   tags:
     - step02
     - step02a
-    - step02a15
+    - step02a16
 
 - name: Send netmask0 ENTER
   kvm_guest_sendkey:
@@ -198,7 +210,7 @@
   tags:
     - step02
     - step02a
-    - step02a16
+    - step02a17
 
 - name: "Management Gateway IP address (ipv4): {{ args.gateway }}"
   kvm_guest_sendkey:
@@ -209,7 +221,7 @@
   tags:
     - step02
     - step02a
-    - step02a17
+    - step02a18
 
 - name: Send gateway ENTER
   kvm_guest_sendkey:
@@ -222,7 +234,7 @@
   tags:
     - step02
     - step02a
-    - step02a18
+    - step02a19
 
 - name: "Management IP address (ipv6): {{ args.ipv6address0 }}"
   kvm_guest_sendkey:
@@ -233,7 +245,7 @@
   tags:
     - step02
     - step02a
-    - step02a19
+    - step02a20
 
 - name: Send ipv6address0 ENTER
   kvm_guest_sendkey:
@@ -246,7 +258,7 @@
   tags:
     - step02
     - step02a
-    - step02a20
+    - step02a21
 
 - name: "Management subnet network prefix length: {{ args.ipv6prefix0 }}"
   kvm_guest_sendkey:
@@ -257,7 +269,7 @@
   tags:
     - step02
     - step02a
-    - step02a21
+    - step02a22
 
 - name: Send ipv6prefix0 ENTER
   kvm_guest_sendkey:
@@ -270,7 +282,7 @@
   tags:
     - step02
     - step02a
-    - step02a22
+    - step02a23
 
 - name: "Management Gateway IP Address (ipv6): {{ args.ipv6gateway }}"
   kvm_guest_sendkey:
@@ -281,7 +293,7 @@
   tags:
     - step02
     - step02a
-    - step02a23
+    - step02a24
 
 - name: Send ipv6gateway ENTER
   kvm_guest_sendkey:
@@ -294,7 +306,7 @@
   tags:
     - step02
     - step02a
-    - step02a24
+    - step02a25
 
 - name: "EMS IP address (ipv4): {{ args.emsip }}"
   kvm_guest_sendkey:
@@ -307,7 +319,7 @@
   tags:
     - step02
     - step02a
-    - step02a25
+    - step02a26
 
 - name: Send args.emsip ENTER
   kvm_guest_sendkey:
@@ -323,7 +335,7 @@
   tags:
     - step02
     - step02a
-    - step02a26
+    - step02a27
 
 - name: "EMS IP address (ipv6): {{ args.emsip_v6 }}"
   kvm_guest_sendkey:
@@ -336,7 +348,7 @@
   tags:
     - step02
     - step02a
-    - step02a27
+    - step02a28
 
 - name: Send args.emsip_v6 ENTER
   kvm_guest_sendkey:
@@ -352,7 +364,7 @@
   tags:
     - step02
     - step02a
-    - step02a28
+    - step02a29
 
 - name: "NTP Server IP Address (ipv4): 127.127.1.0"
   kvm_guest_sendkey:
@@ -362,7 +374,7 @@
   tags:
     - step02
     - step02a
-    - step02a29
+    - step02a30
 
 - name: "NTP Server IP Address (ipv6):"
   kvm_guest_sendkey:
@@ -372,7 +384,7 @@
   tags:
     - step02
     - step02a
-    - step02a30
+    - step02a31
 
 - name: "List of DNS Servers: {{ args.dns }}"
   kvm_guest_sendkey:
@@ -383,7 +395,7 @@
   tags:
     - step02
     - step02a
-    - step02a31
+    - step02a32
 
 - name: Send dns ENTER
   kvm_guest_sendkey:
@@ -396,7 +408,7 @@
   tags:
     - step02
     - step02a
-    - step02a32
+    - step02a33
 
 - name: "Domain Suffix: {{ args.domain_suffix }}"
   kvm_guest_sendkey:
@@ -407,7 +419,7 @@
   tags:
     - step02
     - step02a
-    - step02a33
+    - step02a34
 
 - name: Send domain_suffix ENTER
   kvm_guest_sendkey:
@@ -420,7 +432,7 @@
   tags:
     - step02
     - step02a
-    - step02a34
+    - step02a35
 
 - name: "Enter 'Y' if the above infirmation is correct: Y"
   kvm_guest_sendkey:
@@ -431,7 +443,7 @@
   tags:
     - step02
     - step02a
-    - step02a35
+    - step02a36
 
 - name: Send confirmation ENTER
   kvm_guest_sendkey:
@@ -444,7 +456,7 @@
   tags:
     - step02
     - step02a
-    - step02a36
+    - step02a37
 
 - name: "First and Last Name: {{ args.first_last_name }}"
   kvm_guest_sendkey:
@@ -455,7 +467,7 @@
   tags:
     - step02
     - step02a
-    - step02a37
+    - step02a38
 
 - name: Send first_last_name ENTER
   kvm_guest_sendkey:
@@ -468,7 +480,7 @@
   tags:
     - step02
     - step02a
-    - step02a38
+    - step02a39
 
 - name: "Organizational Unit: {{ args.organizational_unit }}"
   kvm_guest_sendkey:
@@ -479,7 +491,7 @@
   tags:
     - step02
     - step02a
-    - step02a39
+    - step02a40
 
 - name: Send organizational_unit ENTER
   kvm_guest_sendkey:
@@ -492,7 +504,7 @@
   tags:
     - step02
     - step02a
-    - step02a40
+    - step02a41
 
 - name: "Organization: {{ args.organization }}"
   kvm_guest_sendkey:
@@ -503,7 +515,7 @@
   tags:
     - step02
     - step02a
-    - step02a41
+    - step02a42
 
 - name: Send organization ENTER
   kvm_guest_sendkey:
@@ -516,7 +528,7 @@
   tags:
     - step02
     - step02a
-    - step02a42
+    - step02a43
 
 - name: "City or Locality: {{ args.locality }}"
   kvm_guest_sendkey:
@@ -527,7 +539,7 @@
   tags:
     - step02
     - step02a
-    - step02a43
+    - step02a44
 
 - name: Send locality ENTER
   kvm_guest_sendkey:
@@ -540,7 +552,7 @@
   tags:
     - step02
     - step02a
-    - step02a44
+    - step02a45
 
 - name: "State or Province: {{ args.state_province }}"
   kvm_guest_sendkey:
@@ -551,7 +563,7 @@
   tags:
     - step02
     - step02a
-    - step02a45
+    - step02a46
 
 - name: Send state_province ENTER
   kvm_guest_sendkey:
@@ -564,7 +576,7 @@
   tags:
     - step02
     - step02a
-    - step02a46
+    - step02a47
 
 - name: "Country Code ( 2 letter code ): {{ args.country }}"
   kvm_guest_sendkey:
@@ -575,7 +587,7 @@
   tags:
     - step02
     - step02a
-    - step02a47
+    - step02a48
 
 - name: Send country ENTER
   kvm_guest_sendkey:
@@ -588,7 +600,7 @@
   tags:
     - step02
     - step02a
-    - step02a48
+    - step02a49
 
 - name: "Enter 'Y' if the above infirmation is correct: Y"
   kvm_guest_sendkey:
@@ -599,7 +611,7 @@
   tags:
     - step02
     - step02a
-    - step02a49
+    - step02a50
 
 - name: Send confirmation ENTER
   kvm_guest_sendkey:
@@ -612,7 +624,7 @@
   tags:
     - step02
     - step02a
-    - step02a50
+    - step02a51
 
 - name: "Please select a continent or ocean (11 = none): 11"
   kvm_guest_sendkey:
@@ -622,7 +634,7 @@
   tags:
     - step02
     - step02a
-    - step02a51
+    - step02a52
 
 - name: Confirm continent (default Yes)
   kvm_guest_sendkey:
@@ -635,7 +647,7 @@
   tags:
     - step02
     - step02a
-    - step02a52
+    - step02a53
 
 - name: "Please enter the desired value of the TZ environment variable: GMT-4"
   kvm_guest_sendkey:
@@ -645,7 +657,7 @@
   tags:
     - step02
     - step02a
-    - step02a53
+    - step02a54
 
 - name: Confirm timezone (default Yes)
   kvm_guest_sendkey:
@@ -658,7 +670,7 @@
   tags:
     - step02
     - step02a
-    - step02a54
+    - step02a55
 
 - name: "Is the above information OK? (1 Yes, 2 No): 1"
   kvm_guest_sendkey:
@@ -668,7 +680,7 @@
   tags:
     - step02
     - step02a
-    - step02a55
+    - step02a56
 
 - name: Send ENTER and wait 90 seconds
   kvm_guest_sendkey:
@@ -681,7 +693,7 @@
   tags:
     - step02
     - step02a
-    - step02a56
+    - step02a57
 
 - name: "New Password for 'root' user: {{ args.rootpass }}"
   kvm_guest_sendkey:
@@ -693,7 +705,7 @@
   tags:
     - step02
     - step02a
-    - step02a57
+    - step02a58
 
 - name: Send rootpass ENTER
   kvm_guest_sendkey:
@@ -706,7 +718,7 @@
   tags:
     - step02
     - step02a
-    - step02a58
+    - step02a59
 
 - name: "Retype new password for 'root' user: {{ args.rootpass }}"
   kvm_guest_sendkey:
@@ -718,7 +730,7 @@
   tags:
     - step02
     - step02a
-    - step02a59
+    - step02a60
 
 - name: Send rootpass ENTER
   kvm_guest_sendkey:
@@ -731,7 +743,7 @@
   tags:
     - step02
     - step02a
-    - step02a60
+    - step02a61
 
 - name: "New Password for 'ipcs' user: {{ args.ipcspass }}"
   kvm_guest_sendkey:
@@ -743,7 +755,7 @@
   tags:
     - step02
     - step02a
-    - step02a61
+    - step02a62
 
 - name: Send ipcspass ENTER
   kvm_guest_sendkey:
@@ -756,7 +768,7 @@
   tags:
     - step02
     - step02a
-    - step02a62
+    - step02a63
 
 - name: "Retype new password for 'ipcs' user: {{ args.ipcspass }}"
   kvm_guest_sendkey:
@@ -768,7 +780,7 @@
   tags:
     - step02
     - step02a
-    - step02a63
+    - step02a64
 
 - name: Send ipcspass ENTER
   kvm_guest_sendkey:
@@ -781,7 +793,7 @@
   tags:
     - step02
     - step02a
-    - step02a64
+    - step02a65
 
 - name: "New Password for 'grub' user: {{ args.grubpass }}"
   kvm_guest_sendkey:
@@ -793,7 +805,7 @@
   tags:
     - step02
     - step02a
-    - step02a65
+    - step02a66
 
 - name: Send grubpass ENTER
   kvm_guest_sendkey:
@@ -806,7 +818,7 @@
   tags:
     - step02
     - step02a
-    - step02a66
+    - step02a67
 
 - name: "Retype new password for 'grub' user: {{ args.grubpass }}"
   kvm_guest_sendkey:
@@ -818,7 +830,7 @@
   tags:
     - step02
     - step02a
-    - step02a67
+    - step02a68
 
 - name: Send grubpass ENTER
   kvm_guest_sendkey:
@@ -831,4 +843,4 @@
   tags:
     - step02
     - step02a
-    - step02a68
+    - step02a69

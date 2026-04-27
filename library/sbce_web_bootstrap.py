@@ -25,6 +25,7 @@ def _validate_args(module, args):
     elif args.install_sbce:
         require(
             "ucsec_password",
+            "temp_appname",
             "appname",
             "dns",
             "sig_iface",
@@ -62,6 +63,7 @@ def _run(args):
         return web_setup.do_install_sbce(
             host=args.host,
             ucsec_password=args.ucsec_password,
+            temp_appname=args.temp_appname,
             appname=args.appname,
             dns=args.dns,
             sig_iface=args.sig_iface,
@@ -91,7 +93,7 @@ def _run(args):
 def main():
     module = AnsibleModule(
         argument_spec=dict(
-            argv=dict(type="list", elements="str", required=True, no_log=True),
+            argv=dict(type="list", elements="str", required=True, no_log=False),
         ),
         supports_check_mode=False,
     )

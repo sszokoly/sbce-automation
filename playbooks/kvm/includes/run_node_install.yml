@@ -4,7 +4,6 @@
   vars:
     sheet: "{{ node_sheet }}"
   tags:
-    - always
     - step01
     - step01a
     - step01b
@@ -17,9 +16,9 @@
   vars:
     sheet: "{{ node_sheet }}"
   tags:
-    - always
     - step02
     - step02a
     - step02b
     - step02c
+    - step02c4
     - nodeinstall2

@@ -6,6 +6,7 @@
 import sys
 import time
 import argparse
+import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -137,25 +138,46 @@ def has_password_changed(driver: WebDriver) -> bool:
     )
 
 
-def is_sbce_installable(driver: WebDriver, host: str) -> Optional[WebElement]:
+def _install_identifier_xpaths(identifier: str) -> list[str]:
+    xpaths = [
+        f"//tr[td[normalize-space()='{identifier}']]//a[normalize-space()='Install']",
+        f"//a[normalize-space()='Install' and contains(@onclick, \"installSystem(\") and contains(@onclick, \"'{identifier}'\")]",
+    ]
+
+    if re.fullmatch(r"\d{1,3}(?:\.\d{1,3}){3}", identifier):
+        underscored_ip = identifier.replace(".", "_")
+        xpaths.extend([
+            f"//tr[td[contains(normalize-space(), '{underscored_ip}')]]//a[normalize-space()='Install']",
+            f"//a[normalize-space()='Install' and contains(@onclick, \"installSystem(\") and contains(@onclick, \"{underscored_ip}\")]",
+        ])
+
+    return xpaths
+
+
+def is_sbce_installable(driver: WebDriver, identifiers: list[str]) -> Optional[WebElement]:
     wait_for_clickable(driver, By.ID, "menu-device-management").click()
 
     iframes = WebDriverWait(driver, WAIT_TIMEOUT).until(
         EC.presence_of_all_elements_located((By.TAG_NAME, "iframe"))
     )
+    xpaths = []
+    for identifier in identifiers:
+        xpaths.extend(_install_identifier_xpaths(identifier))
+
     for i in range(len(iframes)):
         driver.switch_to.default_content()
         driver.switch_to.frame(i)
-        try:
-            install_link = wait_for_clickable(
-                driver,
-                By.XPATH,
-                f"//tr[td[text()='{host}']]//a[text()='Install']",
-                timeout=3
-            )
-            return install_link
-        except TimeoutException:
-            continue
+        for xpath in xpaths:
+            try:
+                install_link = wait_for_clickable(
+                    driver,
+                    By.XPATH,
+                    xpath,
+                    timeout=3,
+                )
+                return install_link
+            except TimeoutException:
+                continue
 
     driver.switch_to.default_content()
     return None
@@ -382,6 +404,7 @@ def do_change_password(host: str, ucsec_password: str) -> int:
 def do_install_sbce(
     host: str,
     ucsec_password: str,
+    temp_appname: str,
     appname: str,
     dns: str,
     sig_iface: str,
@@ -401,7 +424,12 @@ def do_install_sbce(
             if has_login_failed(driver):
                 _log("Login failed with the provided credentials.")
                 return 1
-        install_link = is_sbce_installable(driver, target_host or host)
+        install_identifiers = [value for value in [temp_appname, target_host] if value]
+        if not target_host and host:
+            install_identifiers.append(host)
+        if not install_identifiers:
+            raise RuntimeError("Install failed: --temp-appname or --target-host is required to find installable SBCE")
+        install_link = is_sbce_installable(driver, install_identifiers)
         if install_link is not None:
             install_sbce(
                 install_link, driver, appname, dns,
@@ -410,7 +438,7 @@ def do_install_sbce(
             )
             _log(f"SBCE '{appname}' installed and commissioned.")
         else:
-            _log("No installable SBCE found.")
+            _log(f"No installable SBCE found for '{', '.join(install_identifiers)}'.")
         return 0
     except Exception as e:
         msg = str(e)
@@ -441,7 +469,7 @@ def do_add_node(
         if add_button is not None:
             add_node(add_button, driver, type, name, ip, name2, ip2)
             if type == "ha":
-                _log(f"Node '{name}' and Node '{name2} added.")
+                _log(f"Node '{name}' and Node '{name2}' added.")
             else:
                 _log(f"Node '{name}' added.")
         else:
@@ -480,16 +508,17 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     common.add_argument("--debug",          action="store_true", help="Enable debug output")
 
     install = parser.add_argument_group("--install-sbce arguments")
-    install.add_argument("--appname",    help="Appliance name")
-    install.add_argument("--dns",        help="Primary DNS server IP")
-    install.add_argument("--dns2",       help="Secondary DNS server IP")
-    install.add_argument("--sig-iface",  help="Signaling interface (e.g. A1)")
-    install.add_argument("--sig-name",   help="Signaling interface name (e.g. A1_internal)")
-    install.add_argument("--sig-mask",   help="Signaling interface subnet mask")
-    install.add_argument("--sig-gw",     help="Signaling interface default gateway")
-    install.add_argument("--sig-ip",     help="SIP signaling IP address")
-    install.add_argument("--sig-pub-ip", help="Public IP for signaling interface")
-    install.add_argument("--target-host", help="Installable SBCE management IP or hostname when different from EMS host")
+    install.add_argument("--temp-appname",   help="Pre Install Appliance name (vmname)")
+    install.add_argument("--appname",        help="Appliance name")
+    install.add_argument("--dns",            help="Primary DNS server IP")
+    install.add_argument("--dns2",           help="Secondary DNS server IP")
+    install.add_argument("--sig-iface",      help="Signaling interface (e.g. A1)")
+    install.add_argument("--sig-name",       help="Signaling interface name (e.g. A1_internal)")
+    install.add_argument("--sig-mask",       help="Signaling interface subnet mask")
+    install.add_argument("--sig-gw",         help="Signaling interface default gateway")
+    install.add_argument("--sig-ip",         help="SIP signaling IP address")
+    install.add_argument("--sig-pub-ip",     help="Public IP for signaling interface")
+    install.add_argument("--target-host",    help="Installable SBCE management IP or hostname when different from EMS host")
 
     add = parser.add_argument_group("--add-node arguments")
     add.add_argument("--type",  help="Node type: sbce, ems, or ha")
@@ -515,6 +544,7 @@ if __name__ == "__main__":
     #     "--install-sbce",
     #     "--host",           "192.168.122.10",
     #     "--ucsec-password", "cmb@Dm1n",
+    #     "--temp-appname",   "sbce3",
     #     "--appname",        "sbce-vm",
     #     "--dns",            "192.168.122.1",
     #     "--sig-iface",      "A1",
@@ -550,11 +580,12 @@ if __name__ == "__main__":
         rv = do_change_password(host=args.host, ucsec_password=args.ucsec_password)
 
     elif args.install_sbce:
-        _require(args, "ucsec_password", "appname", "dns",
+        _require(args, "ucsec_password", "temp_appname", "appname", "dns",
                  "sig_iface", "sig_name", "sig_mask", "sig_gw", "sig_ip")
         rv = do_install_sbce(
             host=args.host,
             ucsec_password=args.ucsec_password,
+            temp_appname=args.temp_appname,
             appname=args.appname,
             dns=args.dns,
             sig_iface=args.sig_iface,

@@ -14,20 +14,15 @@
     - step02b
     - step02b1
 
-- name: Wait 4 mins for the initialization to complete
-  ansible.builtin.pause:
-    seconds: 240
-  tags:
-    - step02
-    - step02b
-    - step02b2
-
-- name: "Ansible ping to {{ args.hostname }}"
-  ansible.builtin.ping:
+- name: "Wait for {{ args.hostname | default(args.vmname) }} SSH to become available"
+  ansible.builtin.wait_for_connection:
+    delay: 30
+    timeout: 600
   delegate_to: "{{ args.hostname | default(args.vmname) }}"
   tags:
     - step02
     - step02b
+    - step02b2
     - step02b3
 
 - name: "Update timezone"
@@ -68,3 +63,173 @@
     - step02
     - step02b
     - step02b7
+
+- name: "Authorize Secure Boot certificate"
+  when: args.apptype == "SBCE" or args.apptype == "EMS+SBCE"
+  block:
+    - name: "Import certificate"
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - mokutil
+          - --import
+          - asbc_custom_secure_boot_cert.cer
+      args:
+        chdir: /usr/local/ipcs/etc/cert/signatures/
+        stdin: |
+          {{ args.rootpass }}
+          {{ args.rootpass }}
+      no_log: true
+      delegate_to: "{{ args.hostname | default(args.vmname) }}"
+      tags:
+        - step02
+        - step02b
+        - step02b8
+
+    - name: "Reboot SBCE"
+      ansible.builtin.command: /sbin/reboot
+      become: yes
+      delegate_to: "{{ args.hostname | default(args.vmname) }}"
+      async: 1
+      poll: 0
+      failed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b9
+
+    - name: "Wait 8 secs for the blue MOK screen to show up"
+      ansible.builtin.pause:
+        seconds: 8
+      tags:
+        - step02
+        - step02b
+        - step02b10
+
+    - name: Send ENTER
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b11
+
+    - name: Send DOWN key to select 'Enroll MOK'
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - DOWN
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b12
+
+    - name: Send ENTER
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b13
+
+    - name: Send DOWN key to select 'Continue'
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - DOWN
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b14
+
+    - name: Send ENTER
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b15
+
+    - name: Send DOWN key to select 'Yes'
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - DOWN
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b16
+
+    - name: Send ENTER
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b17
+
+    - name: "Enter enrollment password"
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        string_send: "{{ args.rootpass }}"
+        no_enter: true
+      tags:
+        - step02
+        - step02b
+        - step02b18
+
+    - name: Send ENTER
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b19
+
+    - name: Send ENTER
+      kvm_guest_sendkey:
+        name: "{{ args['vmname'] }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+      tags:
+        - step02
+        - step02b
+        - step02b20
+
+    - name: Wait for SBCE SSH after MOK enrollment reboot
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 300
+      delegate_to: "{{ args.hostname | default(args.vmname) }}"
+      tags:
+        - step02
+        - step02b
+        - step02b21

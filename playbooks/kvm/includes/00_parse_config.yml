@@ -1,10 +1,23 @@
+- name: "Validate configuration workbook"
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_playbook_python }}"
+      - "{{ playbook_dir }}/../../utils/validate_sbce_config.py"
+      - "{{ src_path }}"
+  changed_when: false
+  delegate_to: localhost
+  tags:
+    - always
+    - step00
+    - step001
+
 - name: "Extract configuration from sbce_config.xlsx"
   read_sbce_config:
     path: "{{ src_path }}"
   tags:
     - always
     - step00
-    - step001
+    - step002
 
 - name: "Create 'ems_nodes' dict with EMS's as keys and list of their SBCE's or secondary EMS's as values"
   vars:
@@ -47,7 +60,7 @@
   tags:
     - always
     - step00
-    - step002
+    - step003
 
 - name: "Create 'ordered_install_list' with sheet names in the order of installation"
   vars:
@@ -70,7 +83,7 @@
   tags:
     - always
     - step00
-    - step003
+    - step004
 
 - name: "Create 'coresident_install_list' for EMS+SBCE nodes"
   vars:
@@ -87,7 +100,7 @@
   tags:
     - always
     - step00
-    - step004
+    - step005
 
 - name: "Create 'primary_ems_install_list' for EMS batches"
   vars:
@@ -105,4 +118,4 @@
   tags:
     - always
     - step00
-    - step005
+    - step006

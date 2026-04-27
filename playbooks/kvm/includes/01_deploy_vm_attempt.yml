@@ -157,14 +157,15 @@
     virt-install
     --connect qemu:///system
     --name "{{ args['vmname'] }}"
-    --memory 8192
+    --memory maxmemory=8192,currentMemory=6144
     --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1
     --disk /var/lib/libvirt/images/{{ image_filename }},bus=virtio,cache=directsync,boot.order=1
     --os-variant rhel8.10
     --boot uefi
     --cpu host-model
     --graphics vnc,listen=0.0.0.0
-    {% for key in ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] if args[key] is not none %}
+    {% set nic_order = ['M1', 'M2'] if args.apptype == 'EMS' else ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] %}
+    {% for key in nic_order if args[key] is defined and args[key] is not none and (args[key] | string | length) > 0 %}
     --network bridge="{{ args[key] }}"
     {% endfor %}
     --import

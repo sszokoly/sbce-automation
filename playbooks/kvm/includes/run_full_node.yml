@@ -2,7 +2,6 @@
   ansible.builtin.include_tasks:
     file: run_node_install.yml
   tags:
-    - always
     - step01
     - step01a
     - step01b
@@ -11,6 +10,7 @@
     - step02a
     - step02b
     - step02c
+    - step02c4
     - fullnode1
 
 - name: "Step 03: Web UI configuration for {{ node_sheet }}"
@@ -19,7 +19,7 @@
   vars:
     sheet: "{{ node_sheet }}"
   tags:
-    - always
     - step03
     - step03a
+    - step03a3
     - fullnode2

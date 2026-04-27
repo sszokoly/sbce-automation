@@ -18,6 +18,7 @@
           '--install-sbce',
           '--host', args.ip0,
           '--ucsec-password', args.ucsecpass,
+          '--temp-appname', args.vmname,
           '--appname', args.appname,
           '--dns', dns_servers[0],
           '--sig-iface', args.sig_iface,
@@ -34,6 +35,11 @@
       }}
   sbce_web_bootstrap:
     argv: "{{ install_argv }}"
+  register: standalone_install_result
+  until: "'No installable SBCE found' not in (standalone_install_result.stdout | default(''))"
+  retries: 6
+  delay: 10
+  ignore_errors: true
   when:
     - args.apptype == 'EMS+SBCE'
     - dns_servers | length > 0
@@ -63,7 +69,7 @@
     - step03a
     - step03a2
 
-- name: "Debug Install Single/HA SBCE argv"
+- name: "Debug redacted_install_argv"
   vars:
     flat_config: "{{ ansible_facts['sbce_config'] | combine }}"
     sbce_install_groups: >-
@@ -83,6 +89,7 @@
           '--host', args.ip0,
           '--ucsec-password', args.ucsecpass,
           '--target-host', install_node.ip0,
+          '--temp-appname', install_node.vmname,
           '--appname', install_node.appname,
           '--dns', dns_servers[0],
           '--sig-iface', install_node.sig_iface,
@@ -144,6 +151,7 @@
           '--host', args.ip0,
           '--ucsec-password', args.ucsecpass,
           '--target-host', install_node.ip0,
+          '--temp-appname', install_node.vmname,
           '--appname', install_node.appname,
           '--dns', dns_servers[0],
           '--sig-iface', install_node.sig_iface,

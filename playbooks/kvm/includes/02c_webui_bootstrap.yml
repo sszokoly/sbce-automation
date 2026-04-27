@@ -2,9 +2,19 @@
 #   ansible.builtin.debug:
 #     var: args
 
-- name: Wait 2 mins for the Web UI to become available
-  ansible.builtin.pause:
-    seconds: 120
+- name: Wait for the Web UI to become available
+  ansible.builtin.uri:
+    url: "https://{{ args.ip0 }}/sbc/"
+    method: GET
+    validate_certs: false
+    return_content: false
+    timeout: 5
+  register: webui_probe
+  failed_when: false
+  until: webui_probe.status | default(0) == 200
+  retries: 30
+  delay: 10
+  delegate_to: localhost
   tags:
     - step02
     - step02c

@@ -4,7 +4,6 @@
   vars:
     node_sheet: "{{ ems_sheet }}"
   tags:
-    - always
     - step01
     - step01a
     - step01b
@@ -13,6 +12,7 @@
     - step02a
     - step02b
     - step02c
+    - step02c4
     - emsbatch1
 
 - name: "Deploy and install child node for EMS {{ ems_sheet }}"
@@ -24,7 +24,6 @@
   loop_control:
     loop_var: child_sheet
   tags:
-    - always
     - step01
     - step01a
     - step01b
@@ -33,6 +32,7 @@
     - step02a
     - step02b
     - step02c
+    - step02c4
     - emsbatch2
 
 - name: "Step 03: Web UI configuration for EMS {{ ems_sheet }}"
@@ -41,7 +41,7 @@
   vars:
     sheet: "{{ ems_sheet }}"
   tags:
-    - always
     - step03
     - step03a
+    - step03a3
     - emsbatch3
