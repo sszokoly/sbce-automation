@@ -216,6 +216,7 @@ data/ovf/*.ovf
 data/screenshots/*
 data/utils/.env
 garbage/*
+playbooks/test/*
 inventory/*
 facts_cache/*
 launch.json
