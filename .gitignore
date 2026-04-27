@@ -216,11 +216,6 @@ data/ovf/*.ovf
 data/screenshots/*
 data/utils/.env
 garbage/*
-inventories/prod/*.yaml
-inventories/prod/*.yml
-inventories/lab/*.yaml
-inventories/lab/*.yml
-inventories/lab/hosts.yml
-inventories/lab/*
+inventory/*
 facts_cache/*
 launch.json
