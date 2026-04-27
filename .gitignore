@@ -215,6 +215,7 @@ data/ova/*.qcow2
 data/ovf/*.ovf
 data/screenshots/*
 data/utils/.env
+garbage/*
 inventories/prod/*.yaml
 inventories/prod/*.yml
 inventories/lab/*.yaml

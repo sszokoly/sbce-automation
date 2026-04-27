@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from utils.deploy_sbce_esxi_ova import deploy_sbce
-from utils.init_setup_esxi import init_setup
+from garbage.init_setup_esxi import init_setup
 import time
 
 def main():
