@@ -1,0 +1,29 @@
+---
+- name: "Add KVM platform host for cleanup"
+  ansible.builtin.add_host:
+    hostname: kvm_host
+    ansible_host: "{{ cleanup_node.platform_address }}"
+    ansible_user: "{{ cleanup_node.platform_username }}"
+    ansible_password: "{{ cleanup_node.platform_password }}"
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_password: "{{ cleanup_node.platform_password }}"
+    ansible_port: 22
+
+- name: "Resolve cleanup image filename"
+  vars:
+    cleanup_filename: "{{ cleanup_node.ovf | basename }}"
+    cleanup_stem: "{{ cleanup_filename.rsplit('.', 1) | first }}"
+  ansible.builtin.set_fact:
+    cleanup_image_filename: "{{ cleanup_stem }}-{{ cleanup_node.artifact_role }}-{{ cleanup_node.hostname }}-thick.qcow2"
+
+- name: "Destroy and undefine {{ cleanup_node.vmname }}"
+  ansible.builtin.shell: |
+    virsh -c qemu:///system destroy "{{ cleanup_node.vmname }}" || true
+    virsh -c qemu:///system undefine "{{ cleanup_node.vmname }}" --nvram || true
+    rm -f "/var/lib/libvirt/images/{{ cleanup_image_filename }}"
+    rm -f "/var/lib/libvirt/staging/{{ cleanup_image_filename }}"
+    rm -f "/tmp/{{ cleanup_node.vmname }}.xml"
+  become: true
+  delegate_to: kvm_host
+  changed_when: true

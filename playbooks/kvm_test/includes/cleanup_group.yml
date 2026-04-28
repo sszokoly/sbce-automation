@@ -1,0 +1,15 @@
+---
+- name: "Build cleanup node list"
+  ansible.builtin.set_fact:
+    cleanup_nodes: >-
+      {{ [failed_group.primary]
+         + (failed_group.secondary_ems | default([]))
+         + (failed_group.sbce_units | default([]) | map(attribute='nodes') | flatten) }}
+
+- name: "Clean up node {{ cleanup_node.hostname | default(cleanup_node.vmname) }}"
+  ansible.builtin.include_tasks:
+    file: cleanup_node.yml
+  loop: "{{ cleanup_nodes }}"
+  loop_control:
+    loop_var: cleanup_node
+    label: "{{ cleanup_node.hostname | default(cleanup_node.vmname) }}"

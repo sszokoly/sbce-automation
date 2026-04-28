@@ -1,0 +1,19 @@
+---
+- name: "Initialize deployment retry state for {{ node.hostname | default(node.vmname) }}"
+  ansible.builtin.set_fact:
+    node_deploy_succeeded: false
+    node_deploy_last_error: ""
+
+- name: "Attempt deployment for {{ node.hostname | default(node.vmname) }}"
+  ansible.builtin.include_tasks:
+    file: deploy_node_attempt.yml
+  loop: "{{ range(1, (vm_deploy_retries | int) + 1) | list }}"
+  loop_control:
+    loop_var: deploy_attempt
+    label: "attempt {{ deploy_attempt }}"
+  when: not node_deploy_succeeded | bool
+
+- name: "Fail if deployment retries were exhausted for {{ node.hostname | default(node.vmname) }}"
+  ansible.builtin.fail:
+    msg: "VM deployment failed for {{ node.hostname | default(node.vmname) }} after {{ vm_deploy_retries }} attempt(s): {{ node_deploy_last_error }}"
+  when: not node_deploy_succeeded | bool

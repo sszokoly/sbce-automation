@@ -1,0 +1,203 @@
+---
+- name: "Prepare deployment attempt {{ deploy_attempt }} for {{ node.hostname | default(node.vmname) }}"
+  vars:
+    source_filename: "{{ node.ovf | basename }}"
+    source_stem: "{{ source_filename.rsplit('.', 1) | first }}"
+  ansible.builtin.set_fact:
+    node_attempt_failed: false
+    node_attempt_error: ""
+    node_source_filename: "{{ source_filename }}"
+    node_image_filename: "{{ source_stem }}-{{ node.artifact_role }}-{{ node.hostname }}-thick.qcow2"
+
+- name: "Add KVM platform host"
+  ansible.builtin.add_host:
+    hostname: kvm_host
+    ansible_host: "{{ node.platform_address }}"
+    ansible_user: "{{ node.platform_username }}"
+    ansible_password: "{{ node.platform_password }}"
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_password: "{{ node.platform_password }}"
+    ansible_port: 22
+
+- name: "Check source image on controller"
+  ansible.builtin.stat:
+    path: "{{ node.ovf }}"
+  register: node_source_local
+  delegate_to: localhost
+  become: false
+
+- name: "Check source image on KVM staging"
+  ansible.builtin.stat:
+    path: "/var/lib/libvirt/staging/{{ node_source_filename }}"
+  register: node_source_remote
+  delegate_to: kvm_host
+  become: true
+
+- name: "Copy controller source image to KVM staging when needed"
+  ansible.builtin.copy:
+    src: "{{ node.ovf }}"
+    dest: "/var/lib/libvirt/staging/{{ node_source_filename }}"
+    mode: "0644"
+  delegate_to: kvm_host
+  become: true
+  when:
+    - node_source_local.stat.exists | bool
+    - not node_source_remote.stat.exists | bool
+
+- name: "Mark attempt failed when source image is unavailable"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "source image is neither controller-local nor staged on KVM host: {{ node.ovf }}"
+  when:
+    - not node_source_local.stat.exists | bool
+    - not node_source_remote.stat.exists | bool
+
+- name: "Regenerate thick image {{ node_image_filename }}"
+  ansible.builtin.shell:
+    cmd: >-
+      rm -f "{{ node_image_filename }}" &&
+      qemu-img convert -f qcow2 -O qcow2 -o preallocation=full
+      "{{ node_source_filename }}" "{{ node_image_filename }}"
+    chdir: /var/lib/libvirt/staging/
+  register: node_convert_result
+  failed_when: false
+  changed_when: node_convert_result.rc == 0
+  delegate_to: kvm_host
+  become: true
+  when: not node_attempt_failed | bool
+
+- name: "Record conversion failure"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "qemu-img conversion failed: {{ node_convert_result.stderr | default(node_convert_result.stdout | default('')) }}"
+  when:
+    - node_convert_result is defined
+    - node_convert_result.rc | default(0) != 0
+
+- name: "Install regenerated image into libvirt images"
+  ansible.builtin.shell:
+    cmd: >-
+      rm -f "/var/lib/libvirt/images/{{ node_image_filename }}" &&
+      cp --reflink=auto "/var/lib/libvirt/staging/{{ node_image_filename }}" "/var/lib/libvirt/images/{{ node_image_filename }}" &&
+      chown qemu:qemu "/var/lib/libvirt/images/{{ node_image_filename }}" &&
+      chmod 0640 "/var/lib/libvirt/images/{{ node_image_filename }}"
+  register: node_image_install_result
+  failed_when: false
+  changed_when: node_image_install_result.rc == 0
+  delegate_to: kvm_host
+  become: true
+  when: not node_attempt_failed | bool
+
+- name: "Record image install failure"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "image install failed: {{ node_image_install_result.stderr | default(node_image_install_result.stdout | default('')) }}"
+  when:
+    - node_image_install_result is defined
+    - node_image_install_result.rc | default(0) != 0
+
+- name: "Generate VM XML for {{ node.vmname }}"
+  ansible.builtin.shell: >-
+    virt-install
+    --connect qemu:///system
+    --name "{{ node.vmname }}"
+    --memory maxmemory=8192,currentMemory=6144
+    --vcpus 3,maxvcpus=3,sockets=3,cores=1,threads=1
+    --disk /var/lib/libvirt/images/{{ node_image_filename }},bus=virtio,cache=directsync,boot.order=1
+    --os-variant rhel8.10
+    --boot uefi
+    --cpu host-model
+    --graphics vnc,listen=0.0.0.0
+    {% set nic_order = ['M1', 'M2'] if node.apptype == 'EMS' else ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] %}
+    {% for key in nic_order if node[key] is defined and node[key] is not none and (node[key] | string | length) > 0 %}
+    --network bridge="{{ node[key] }}"
+    {% endfor %}
+    --import
+    --print-xml > /tmp/{{ node.vmname }}.xml
+  register: node_xml_result
+  failed_when: false
+  changed_when: node_xml_result.rc == 0
+  delegate_to: kvm_host
+  become: true
+  when: not node_attempt_failed | bool
+
+- name: "Record XML generation failure"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "virt-install XML generation failed: {{ node_xml_result.stderr | default(node_xml_result.stdout | default('')) }}"
+  when:
+    - node_xml_result is defined
+    - node_xml_result.rc | default(0) != 0
+
+- name: "Define and start VM {{ node.vmname }}"
+  ansible.builtin.shell: |
+    virsh -c qemu:///system undefine "{{ node.vmname }}" --nvram || true
+    virsh -c qemu:///system define "/tmp/{{ node.vmname }}.xml"
+    virsh -c qemu:///system autostart "{{ node.vmname }}"
+    virsh -c qemu:///system start "{{ node.vmname }}"
+  register: node_start_result
+  failed_when: false
+  changed_when: node_start_result.rc == 0
+  delegate_to: kvm_host
+  become: true
+  when: not node_attempt_failed | bool
+
+- name: "Record VM start failure"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "VM define/start failed: {{ node_start_result.stderr | default(node_start_result.stdout | default('')) }}"
+  when:
+    - node_start_result is defined
+    - node_start_result.rc | default(0) != 0
+
+- name: "Wait for VM boot before console bootstrap"
+  ansible.builtin.pause:
+    seconds: "{{ sbce_boot_wait | int }}"
+  when: not node_attempt_failed | bool
+
+- name: "Console bootstrap {{ node.hostname | default(node.vmname) }}"
+  ansible.builtin.include_tasks:
+    file: console_bootstrap.yml
+  when: not node_attempt_failed | bool
+
+- name: "Add deployed node to in-memory SSH inventory"
+  ansible.builtin.add_host:
+    hostname: "{{ node.hostname | default(node.vmname) }}"
+    ansible_host: "{{ node.ip0 }}"
+    ansible_user: ipcs
+    ansible_password: "{{ node.ipcspass }}"
+    ansible_become_user: root
+    ansible_become_password: "{{ node.rootpass }}"
+    ansible_become_method: su
+    ansible_port: 22
+  when: not node_attempt_failed | bool
+
+- name: "Wait for SSH on {{ node.hostname | default(node.vmname) }}"
+  ansible.builtin.wait_for_connection:
+    delay: 30
+    timeout: 600
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
+  register: node_ssh_result
+  failed_when: false
+  when: not node_attempt_failed | bool
+
+- name: "Record SSH readiness failure"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "SSH did not become ready for {{ node.hostname | default(node.vmname) }}"
+  when:
+    - node_ssh_result is defined
+    - node_ssh_result.failed | default(false)
+
+- name: "Clean up failed deployment attempt"
+  ansible.builtin.include_tasks:
+    file: cleanup_node.yml
+  vars:
+    cleanup_node: "{{ node }}"
+  when: node_attempt_failed | bool
+
+- name: "Record deployment attempt result"
+  ansible.builtin.set_fact:
+    node_deploy_succeeded: "{{ not node_attempt_failed | bool }}"
+    node_deploy_last_error: "{{ node_attempt_error }}"

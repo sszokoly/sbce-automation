@@ -1,0 +1,21 @@
+---
+- name: "Add SBCE unit {{ sbce_unit.sheets | default([]) | join(' + ') }} to EMS {{ ems_node.hostname }}"
+  vars:
+    primary_child: "{{ sbce_unit.nodes[0] }}"
+    secondary_child: "{{ sbce_unit.nodes[1] if sbce_unit.type == 'ha' else {} }}"
+    add_node_argv: >-
+      {{
+        [
+          '--add-node',
+          '--host', ems_node.ip0,
+          '--ucsec-password', ems_node.ucsecpass,
+          '--type', ('ha' if sbce_unit.type == 'ha' else 'sbce'),
+          '--name', primary_child.vmname,
+          '--ip', primary_child.ip0,
+          '--debug'
+        ]
+        + ([ '--name2', secondary_child.vmname, '--ip2', secondary_child.ip0 ] if sbce_unit.type == 'ha' else [])
+      }}
+  sbce_web_bootstrap:
+    argv: "{{ add_node_argv }}"
+  delegate_to: localhost

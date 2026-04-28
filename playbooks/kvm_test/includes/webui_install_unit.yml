@@ -1,0 +1,29 @@
+---
+- name: "Install/commission SBCE unit through EMS Web UI"
+  vars:
+    install_node: "{{ sbce_unit.nodes[0] }}"
+    dns_servers: "{{ (install_node.dns | default('', true) | string).split(',') | map('trim') | reject('equalto', '') | list }}"
+    install_argv: >-
+      {{
+        [
+          '--install-sbce',
+          '--host', ems_node.ip0,
+          '--ucsec-password', ems_node.ucsecpass,
+          '--target-host', install_node.ip0,
+          '--temp-appname', install_node.vmname,
+          '--appname', install_node.appname,
+          '--dns', dns_servers[0],
+          '--sig-iface', install_node.sig_iface,
+          '--sig-name', install_node.sig_name,
+          '--sig-mask', install_node.sig_mask,
+          '--sig-gw', install_node.sig_gw,
+          '--sig-ip', install_node.sig_ip,
+          '--debug'
+        ]
+        + ([ '--dns2', dns_servers[1] ] if dns_servers | length > 1 else [])
+        + ([ '--sig-pub-ip', install_node.sig_pub_ip ] if install_node.sig_pub_ip | default('', true) | string | length > 0 else [])
+      }}
+  sbce_web_bootstrap:
+    argv: "{{ install_argv }}"
+  delegate_to: localhost
+  when: dns_servers | length > 0
