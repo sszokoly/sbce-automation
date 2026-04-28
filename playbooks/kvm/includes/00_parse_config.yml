@@ -62,29 +62,6 @@
     - step00
     - step003
 
-- name: "Create 'ordered_install_list' with sheet names in the order of installation"
-  vars:
-    flat_config: "{{ sbce_config | combine }}"
-  ansible.builtin.set_fact:
-    ordered_install_list: >-
-      {%- set ordered_list = [] -%}
-      {%- for key, values in ems_nodes.items() -%}
-        {%- set _ = ordered_list.append(key) -%}
-        {%- for sublist in values -%}
-          {%- for val in sublist -%}
-            {%- set _ = ordered_list.append(val) -%}
-          {%- endfor -%}
-        {%- endfor -%}
-      {%- endfor -%}
-      {%- if not ordered_list -%}
-        {%- set ordered_list = flat_config.keys() -%}
-      {%- endif -%}
-      {{ ordered_list | from_yaml }}
-  tags:
-    - always
-    - step00
-    - step004
-
 - name: "Create 'coresident_install_list' for EMS+SBCE nodes"
   vars:
     flat_config: "{{ sbce_config | combine }}"
