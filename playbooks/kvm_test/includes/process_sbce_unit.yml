@@ -1,27 +1,10 @@
 ---
-- name: "Add child SBCE unit to EMS before VM deployment"
+- name: "Deploy SBCE VM node"
   ansible.builtin.include_tasks:
-    file: webui_add_unit.yml
-
-- name: "Initialize installable retry state"
-  ansible.builtin.set_fact:
-    sbce_unit_installable: false
-    sbce_unit_last_error: ""
-
-- name: "Deploy unit and wait for installable state"
-  ansible.builtin.include_tasks:
-    file: deploy_and_check_unit.yml
-  loop: "{{ range(1, (sbce_installable_retries | int) + 1) | list }}"
+    file: deploy_node.yml
+  loop: "{{ sbce_unit.nodes }}"
   loop_control:
-    loop_var: installable_attempt
-    label: "installable attempt {{ installable_attempt }}"
-  when: not sbce_unit_installable | bool
-
-- name: "Fail if SBCE unit never became installable"
-  ansible.builtin.fail:
-    msg: "SBCE unit {{ sbce_unit.sheets | join(' + ') }} did not become installable after {{ sbce_installable_retries }} attempt(s): {{ sbce_unit_last_error }}"
-  when: not sbce_unit_installable | bool
-
-- name: "Install/commission installable SBCE unit"
-  ansible.builtin.include_tasks:
-    file: webui_install_unit.yml
+    loop_var: node
+    label: "{{ node.hostname | default(node.vmname) }}"
+  vars:
+    group_primary: "{{ ems_node }}"

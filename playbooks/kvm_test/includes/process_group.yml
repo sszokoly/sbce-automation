@@ -30,9 +30,31 @@
             - "{{ current_group.primary }}"
       when: current_group.coresident | bool
 
-    - name: "Process SBCE units for {{ current_group.primary.hostname }}"
+    - name: "Add child SBCE units to EMS {{ current_group.primary.hostname }}"
+      ansible.builtin.include_tasks:
+        file: webui_add_unit.yml
+      loop: "{{ current_group.sbce_units }}"
+      loop_control:
+        loop_var: sbce_unit
+        label: "{{ sbce_unit.sheets | join(' + ') }}"
+      vars:
+        ems_node: "{{ current_group.primary }}"
+      when: not current_group.coresident | bool
+
+    - name: "Deploy SBCE units for {{ current_group.primary.hostname }}"
       ansible.builtin.include_tasks:
         file: process_sbce_unit.yml
+      loop: "{{ current_group.sbce_units }}"
+      loop_control:
+        loop_var: sbce_unit
+        label: "{{ sbce_unit.sheets | join(' + ') }}"
+      vars:
+        ems_node: "{{ current_group.primary }}"
+      when: not current_group.coresident | bool
+
+    - name: "Wait for and install SBCE units for {{ current_group.primary.hostname }}"
+      ansible.builtin.include_tasks:
+        file: wait_and_install_unit.yml
       loop: "{{ current_group.sbce_units }}"
       loop_control:
         loop_var: sbce_unit

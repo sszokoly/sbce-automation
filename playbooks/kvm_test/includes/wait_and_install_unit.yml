@@ -1,0 +1,28 @@
+---
+- name: "Initialize installable retry state"
+  ansible.builtin.set_fact:
+    sbce_unit_installable: false
+    sbce_unit_last_error: ""
+
+- name: "Wait for SBCE unit to become installable"
+  ansible.builtin.include_tasks:
+    file: deploy_and_check_unit.yml
+  loop: "{{ range(1, (sbce_installable_retries | int) + 1) | list }}"
+  loop_control:
+    loop_var: installable_attempt
+    label: "installable attempt {{ installable_attempt }}"
+  when: not sbce_unit_installable | bool
+
+- name: "Clean up SBCE unit that did not become installable"
+  ansible.builtin.include_tasks:
+    file: cleanup_unit.yml
+  when: not sbce_unit_installable | bool
+
+- name: "Fail if SBCE unit never became installable"
+  ansible.builtin.fail:
+    msg: "SBCE unit {{ sbce_unit.sheets | join(' + ') }} did not become installable after {{ sbce_installable_retries }} attempt(s): {{ sbce_unit_last_error }}"
+  when: not sbce_unit_installable | bool
+
+- name: "Install/commission installable SBCE unit"
+  ansible.builtin.include_tasks:
+    file: webui_install_unit.yml

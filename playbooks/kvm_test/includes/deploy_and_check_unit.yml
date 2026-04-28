@@ -1,16 +1,7 @@
 ---
-- name: "Deploy SBCE unit attempt {{ installable_attempt }}"
+- name: "Check SBCE unit installable attempt {{ installable_attempt }}"
+  when: not sbce_unit_installable | bool
   block:
-    - name: "Deploy SBCE VM node"
-      ansible.builtin.include_tasks:
-        file: deploy_node.yml
-      loop: "{{ sbce_unit.nodes }}"
-      loop_control:
-        loop_var: node
-        label: "{{ node.hostname | default(node.vmname) }}"
-      vars:
-        group_primary: "{{ ems_node }}"
-
     - name: "Poll EMS until SBCE unit is installable"
       vars:
         primary_child: "{{ sbce_unit.nodes[0] }}"
@@ -45,17 +36,8 @@
         sbce_unit_installable: "{{ (installable_query.stdout | default('{}') | from_json).data.installable | default(false) }}"
         sbce_unit_last_error: "{{ (installable_query.stdout | default('{}') | from_json).data.raw_status | default('not installable') }}"
 
-    - name: "Clean up SBCE unit that did not become installable"
-      ansible.builtin.include_tasks:
-        file: cleanup_unit.yml
-      when: not sbce_unit_installable | bool
-
   rescue:
-    - name: "Record SBCE deployment attempt failure"
+    - name: "Record SBCE installable check failure"
       ansible.builtin.set_fact:
         sbce_unit_installable: false
         sbce_unit_last_error: "{{ ansible_failed_task.name | default('unknown task') }}: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
-
-    - name: "Clean up failed SBCE unit attempt"
-      ansible.builtin.include_tasks:
-        file: cleanup_unit.yml
