@@ -53,10 +53,6 @@
     - step02b
     - step02b5
 
-# - name: "Pause another 2 secs"
-#   ansible.builtin.pause:
-#     seconds: 2
-
 - name: "Update NTP server"
   become: yes
   ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ ntpserver }}"
