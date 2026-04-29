@@ -17,21 +17,21 @@
     - step02b
     - step02b1
 
-# - name: "Wait for {{ args.hostname | default(args.vmname) }} SSH to become available"
-#   ansible.builtin.wait_for_connection:
-#     delay: 30
-#     timeout: 600
-#   delegate_to: "{{ args.hostname | default(args.vmname) }}"
-#   when: not post_bootstrap_skip_connection_setup | default(false) | bool
-#   tags:
-#     - step02
-#     - step02b
-#     - step02b2
-#     - step02b3
+- name: "Wait for {{ args.hostname | default(args.vmname) }} SSH to become available"
+  ansible.builtin.wait_for_connection:
+    delay: 30
+    timeout: 600
+  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+  when: not post_bootstrap_skip_connection_setup | default(false) | bool
+  tags:
+    - step02
+    - step02b
+    - step02b2
+    - step02b3
 
-- name: "Pause another 120 secs"
+- name: "Pause another 60 secs"
   ansible.builtin.pause:
-    seconds: 120
+    seconds: 60
 
 - name: "Update timezone"
   become: yes
@@ -53,9 +53,9 @@
     - step02b
     - step02b5
 
-- name: "Pause another 2 secs"
-  ansible.builtin.pause:
-    seconds: 2
+# - name: "Pause another 2 secs"
+#   ansible.builtin.pause:
+#     seconds: 2
 
 - name: "Update NTP server"
   become: yes
