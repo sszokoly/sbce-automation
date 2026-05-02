@@ -1,0 +1,98 @@
+---
+- name: "Initialize group status for {{ current_group.primary.hostname }}"
+  ansible.builtin.set_fact:
+    current_group_failed: false
+    current_group_failure: ""
+
+- name: "Preflight EMS group {{ current_group.primary.hostname }}"
+  ansible.builtin.include_tasks:
+    file: preflight_group.yml
+  vars:
+    preflight_group: "{{ current_group }}"
+
+- name: "Process EMS group {{ current_group.primary.hostname }}"
+  block:
+    - name: "Deploy primary EMS {{ current_group.primary.hostname }}"
+      ansible.builtin.include_tasks:
+        file: deploy_node.yml
+      vars:
+        node: "{{ current_group.primary }}"
+        group_primary: "{{ current_group.primary }}"
+
+    # - name: "Bootstrap primary EMS Web UI {{ current_group.primary.hostname }}"
+    #   ansible.builtin.include_tasks:
+    #     file: webui_bootstrap_ems.yml
+    #   vars:
+    #     ems_node: "{{ current_group.primary }}"
+
+    # - name: "Install coresident EMS+SBCE {{ current_group.primary.hostname }}"
+    #   ansible.builtin.include_tasks:
+    #     file: webui_install_unit.yml
+    #   vars:
+    #     ems_node: "{{ current_group.primary }}"
+    #     sbce_unit:
+    #       type: coresident
+    #       nodes:
+    #         - "{{ current_group.primary }}"
+    #   when: current_group.coresident | bool
+
+    # - name: "Add child SBCE units to EMS {{ current_group.primary.hostname }}"
+    #   ansible.builtin.include_tasks:
+    #     file: webui_add_unit.yml
+    #   loop: "{{ current_group.sbce_units }}"
+    #   loop_control:
+    #     loop_var: sbce_unit
+    #     label: "{{ sbce_unit.sheets | join(' + ') }}"
+    #   vars:
+    #     ems_node: "{{ current_group.primary }}"
+    #   when: not current_group.coresident | bool
+
+    # - name: "Deploy SBCE units for {{ current_group.primary.hostname }}"
+    #   ansible.builtin.include_tasks:
+    #     file: process_sbce_unit.yml
+    #   loop: "{{ current_group.sbce_units }}"
+    #   loop_control:
+    #     loop_var: sbce_unit
+    #     label: "{{ sbce_unit.sheets | join(' + ') }}"
+    #   vars:
+    #     ems_node: "{{ current_group.primary }}"
+    #   when: not current_group.coresident | bool
+
+    # - name: "Wait for and install SBCE units for {{ current_group.primary.hostname }}"
+    #   ansible.builtin.include_tasks:
+    #     file: wait_and_install_unit.yml
+    #   loop: "{{ current_group.sbce_units }}"
+    #   loop_control:
+    #     loop_var: sbce_unit
+    #     label: "{{ sbce_unit.sheets | join(' + ') }}"
+    #   vars:
+    #     ems_node: "{{ current_group.primary }}"
+    #   when: not current_group.coresident | bool
+
+    # - name: "Deploy secondary EMS nodes for {{ current_group.primary.hostname }}"
+    #   ansible.builtin.include_tasks:
+    #     file: deploy_node.yml
+    #   loop: "{{ current_group.secondary_ems }}"
+    #   loop_control:
+    #     loop_var: node
+    #     label: "{{ node.hostname | default(node.vmname) }}"
+    #   vars:
+    #     group_primary: "{{ current_group.primary }}"
+
+  rescue:
+    - name: "Record failed EMS group"
+      ansible.builtin.set_fact:
+        current_group_failed: true
+        current_group_failure: "{{ ansible_failed_task.name | default('unknown task') }}: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
+
+    - name: "Clean up failed EMS group VMs"
+      ansible.builtin.include_tasks:
+        file: cleanup_group.yml
+      vars:
+        failed_group: "{{ current_group }}"
+
+  always:
+    - name: "Report EMS group result"
+      ansible.builtin.debug:
+        msg: >-
+          EMS group {{ current_group.primary.hostname }} {{ 'failed and was cleaned up' if current_group_failed else 'completed' }}{{ ': ' ~ current_group_failure if current_group_failed else '' }}

@@ -7,6 +7,7 @@
     node_attempt_failed: false
     node_attempt_error: ""
     node_source_filename: "{{ source_filename }}"
+    node_thick_filename: "{{ source_stem }}-thick.qcow2"
     node_image_filename: "{{ source_stem }}-{{ node.artifact_role }}-{{ node.hostname }}-thick.qcow2"
 
 - name: "Add KVM platform host"
@@ -23,16 +24,45 @@
 - name: "Check source image on controller"
   ansible.builtin.stat:
     path: "{{ node.ovf }}"
+    get_checksum: false
   register: node_source_local
   delegate_to: localhost
   become: false
 
+- name: "Create staging folder if it does not exist"
+  ansible.builtin.file:
+    path: /var/lib/libvirt/staging
+    state: directory
+    mode: '0755'
+    owner: "{{ node.platform_username }}"
+    group: "{{ node.platform_username }}"
+  delegate_to: kvm_host
+  become: yes
+
 - name: "Check source image on KVM staging"
   ansible.builtin.stat:
     path: "/var/lib/libvirt/staging/{{ node_source_filename }}"
+    get_checksum: false
   register: node_source_remote
   delegate_to: kvm_host
   become: true
+
+- name: "Check thick image on KVM staging"
+  ansible.builtin.stat:
+    path: "/var/lib/libvirt/staging/{{ node_thick_filename }}"
+    get_checksum: false
+  register: node_thick_remote
+  delegate_to: kvm_host
+  become: true
+
+- name: "Mark attempt failed when source image is unavailable"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "source image is neither controller-local nor staged on KVM host: {{ node.ovf }}"
+  when:
+    - not node_source_local.stat.exists | bool
+    - not node_source_remote.stat.exists | bool
+    - not node_thick_remote.stat.exists | bool
 
 - name: "Copy controller source image to KVM staging when needed"
   ansible.builtin.copy:
@@ -44,28 +74,30 @@
   when:
     - node_source_local.stat.exists | bool
     - not node_source_remote.stat.exists | bool
+    - not node_thick_remote.stat.exists | bool
 
-- name: "Mark attempt failed when source image is unavailable"
-  ansible.builtin.set_fact:
-    node_attempt_failed: true
-    node_attempt_error: "source image is neither controller-local nor staged on KVM host: {{ node.ovf }}"
-  when:
-    - not node_source_local.stat.exists | bool
-    - not node_source_remote.stat.exists | bool
-
-- name: "Regenerate thick image {{ node_image_filename }}"
-  ansible.builtin.shell:
-    cmd: >-
-      rm -f "{{ node_image_filename }}" &&
-      qemu-img convert -f qcow2 -O qcow2 -o preallocation=full
-      "{{ node_source_filename }}" "{{ node_image_filename }}"
+- name: "Generate thick image {{ node_thick_filename }}"
+  ansible.builtin.command:
+    argv:
+      - qemu-img
+      - convert
+      - -f
+      - qcow2
+      - -O
+      - qcow2
+      - -o
+      - preallocation=full
+      - "{{ node_source_filename }}"
+      - "{{ node_thick_filename }}"
     chdir: /var/lib/libvirt/staging/
   register: node_convert_result
   failed_when: false
   changed_when: node_convert_result.rc == 0
   delegate_to: kvm_host
   become: true
-  when: not node_attempt_failed | bool
+  when:
+    - not node_attempt_failed | bool
+    - not node_thick_remote.stat.exists | bool
 
 - name: "Record conversion failure"
   ansible.builtin.set_fact:
@@ -75,11 +107,11 @@
     - node_convert_result is defined
     - node_convert_result.rc | default(0) != 0
 
-- name: "Move regenerated image into libvirt images folder"
+- name: "Copy thick image to images folder as {{ node_image_filename }}"
   ansible.builtin.shell:
     cmd: >-
       rm -f "/var/lib/libvirt/images/{{ node_image_filename }}" &&
-      mv "/var/lib/libvirt/staging/{{ node_image_filename }}" "/var/lib/libvirt/images/{{ node_image_filename }}" &&
+      cp --reflink=auto "/var/lib/libvirt/staging/{{ node_thick_filename }}" "/var/lib/libvirt/images/{{ node_image_filename }}" &&
       chown qemu:qemu "/var/lib/libvirt/images/{{ node_image_filename }}" &&
       chmod 0640 "/var/lib/libvirt/images/{{ node_image_filename }}"
   register: node_image_install_result
@@ -158,9 +190,13 @@
     - node_start_result is defined
     - node_start_result.rc | default(0) != 0
 
-- name: "Wait for VM boot before console bootstrap"
+- name: "Wait 2 mins before starting console bootstrap check"
   ansible.builtin.pause:
-    seconds: "{{ sbce_boot_wait | int }}"
+    seconds: 120
+
+- name: "Wait for console prompt before console bootstrap"
+  ansible.builtin.include_tasks:
+    file: wait_for_console_prompt.yml
   when: not node_attempt_failed | bool
 
 - name: "Console bootstrap {{ node.hostname | default(node.vmname) }}"
@@ -202,7 +238,7 @@
   block:
     - name: "Run post-bootstrap configuration"
       ansible.builtin.include_tasks:
-        file: ../../kvm/includes/02b_post_bootstrap_configuration.yml
+        file: post_bootstrap_configuration.yml
       vars:
         args: "{{ node }}"
         post_bootstrap_skip_connection_setup: true

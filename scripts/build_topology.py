@@ -90,8 +90,6 @@ def main() -> int:
     platforms = {text(sheet.get("platform_type")).upper() for sheet in sheets if text(sheet.get("platform_type"))}
     if len(platforms) != 1:
         errors.append("selected sheets must contain exactly one platform_type")
-    elif platforms != {"KVM"}:
-        errors.append("playbooks/kvm_test only supports platform_type=KVM")
 
     seen: dict[str, dict[str, str]] = {"ip0": {}, "vmname": {}, "hostname": {}, "appname": {}}
     for sheet in sheets:
@@ -102,7 +100,7 @@ def main() -> int:
             if not value:
                 continue
             previous = seen[field].get(value)
-            if previous:
+            if previous and not sheet.get("ha_peer_node"):
                 errors.append(f"{sheet['_sheet']}: duplicate {field} '{value}' also used by {previous}")
             seen[field][value] = sheet["_sheet"]
 
@@ -185,4 +183,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    #sys.argv.extend(['data/xlsx/sbce_config_wrong.xlsx'])
     sys.exit(main())

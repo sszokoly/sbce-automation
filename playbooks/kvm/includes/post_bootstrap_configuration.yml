@@ -1,33 +1,24 @@
 - name: Add SBCE to in-memory inventory
   ansible.builtin.add_host:
-    hostname: "{{ args.hostname | default(args.vmname) }}"
-    ansible_host: "{{ args.ip0 }}"
+    hostname: "{{ node.hostname | default(node.vmname) }}"
+    ansible_host: "{{ node.ip0 }}"
     ansible_user: ipcs
-    ansible_password: "{{ args.ipcspass }}"
+    ansible_password: "{{ node.ipcspass }}"
     ansible_become_user: root
-    ansible_become_password: "{{ args.rootpass }}"
+    ansible_become_password: "{{ node.rootpass }}"
     ansible_become_method: su
     ansible_port: 22
     ansible_timeout: 30
     ansible_python_interpreter: /usr/libexec/platform-python
   no_log: false
   when: not post_bootstrap_skip_connection_setup | default(false) | bool
-  tags:
-    - step02
-    - step02b
-    - step02b1
 
-- name: "Wait for {{ args.hostname | default(args.vmname) }} SSH to become available"
+- name: "Wait for {{ node.hostname | default(node.vmname) }} SSH to become available"
   ansible.builtin.wait_for_connection:
     delay: 30
     timeout: 600
-  delegate_to: "{{ args.hostname | default(args.vmname) }}"
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
   when: not post_bootstrap_skip_connection_setup | default(false) | bool
-  tags:
-    - step02
-    - step02b
-    - step02b2
-    - step02b3
 
 - name: "Pause another 60 secs"
   ansible.builtin.pause:
@@ -35,45 +26,29 @@
 
 - name: "Update timezone"
   become: yes
-  ansible.builtin.shell: "timedatectl set-timezone {{ args.timezone }}"
-  when: args.timezone| default('', true) | length > 0
-  delegate_to: "{{ args.hostname | default(args.vmname) }}"
-  tags:
-    - step02
-    - step02b
-    - step02b4
+  ansible.builtin.shell: "timedatectl set-timezone {{ node.timezone }}"
+  when: node.timezone | default('', true) | length > 0
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
 - name: "Extract 1st NTP server"
   ansible.builtin.set_fact:
-    ntpserver: "{{ (args.ntpservers | default('', true)).split(',') | first }}"
-  when: args.ntpservers | default('', true) | length > 0
-  delegate_to: "{{ args.hostname | default(args.vmname) }}"
-  tags:
-    - step02
-    - step02b
-    - step02b5
+    ntpserver: "{{ (node.ntpservers | default('', true)).split(',') | first }}"
+  when: node.ntpservers | default('', true) | length > 0
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
 - name: "Update NTP server"
   become: yes
   ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ ntpserver }}"
   when: ntpserver is defined and ntpserver | length > 0
-  delegate_to: "{{ args.hostname | default(args.vmname) }}"
-  tags:
-    - step02
-    - step02b
-    - step02b6
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
 - name: "Disable password aging for 'ipcs' user"
   become: yes
   ansible.builtin.shell: "chage -E -1 -m 0 -M 99999 ipcs"
-  delegate_to: "{{ args.hostname | default(args.vmname) }}"
-  tags:
-    - step02
-    - step02b
-    - step02b7
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
 - name: "Authorize Secure Boot certificate"
-  when: args.apptype == "SBCE" or args.apptype == "EMS+SBCE"
+  when: node.apptype == "SBCE" or node.apptype == "EMS+SBCE"
   block:
     - name: "Import certificate"
       become: yes
@@ -85,159 +60,103 @@
       args:
         chdir: /usr/local/ipcs/etc/cert/signatures/
         stdin: |
-          {{ args.rootpass }}
-          {{ args.rootpass }}
+          {{ node.rootpass }}
+          {{ node.rootpass }}
       no_log: true
-      delegate_to: "{{ args.hostname | default(args.vmname) }}"
-      tags:
-        - step02
-        - step02b
-        - step02b8
+      delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
     - name: "Reboot SBCE"
       ansible.builtin.command: /sbin/reboot
       become: yes
-      delegate_to: "{{ args.hostname | default(args.vmname) }}"
+      delegate_to: "{{ node.hostname | default(node.vmname) }}"
       async: 1
       poll: 0
       failed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b9
 
     - name: "Wait 8 secs for the blue MOK screen to show up"
       ansible.builtin.pause:
         seconds: 8
-      tags:
-        - step02
-        - step02b
-        - step02b10
 
     - name: Send ENTER
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - ENTER
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b11
 
     - name: Send DOWN key to select 'Enroll MOK'
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - DOWN
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b12
 
     - name: Send ENTER
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - ENTER
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b13
 
     - name: Send DOWN key to select 'Continue'
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - DOWN
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b14
 
     - name: Send ENTER
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - ENTER
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b15
 
     - name: Send DOWN key to select 'Yes'
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - DOWN
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b16
 
     - name: Send ENTER
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - ENTER
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b17
 
     - name: "Enter enrollment password"
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
-        string_send: "{{ args.rootpass }}"
+        name: "{{ node.vmname }}"
+        string_send: "{{ node.rootpass }}"
         no_enter: true
-      tags:
-        - step02
-        - step02b
-        - step02b18
 
     - name: Send ENTER
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - ENTER
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b19
 
     - name: Send ENTER
       kvm_guest_sendkey:
-        name: "{{ args['vmname'] }}"
+        name: "{{ node.vmname }}"
         keys_send:
           - ENTER
         sleep_time: "{{ sleep_time }}"
       changed_when: false
-      tags:
-        - step02
-        - step02b
-        - step02b20
 
     - name: Wait for SBCE SSH after MOK enrollment reboot
       ansible.builtin.wait_for_connection:
         delay: 10
         timeout: 300
-      delegate_to: "{{ args.hostname | default(args.vmname) }}"
-      tags:
-        - step02
-        - step02b
-        - step02b21
+      delegate_to: "{{ node.hostname | default(node.vmname) }}"

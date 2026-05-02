@@ -1,0 +1,46 @@
+---
+- name: "Wait fixed boot time when tesseract is unavailable"
+  ansible.builtin.pause:
+    seconds: "{{ sbce_boot_wait | int }}"
+  when:
+    - not has_tesseract | default(false) | bool
+    - not node_attempt_failed | bool
+
+- name: "Initialize console prompt OCR state"
+  ansible.builtin.set_fact:
+    console_prompt_ready: false
+  when:
+    - has_tesseract | default(false) | bool
+    - not node_attempt_failed | bool
+
+- name: "Create local screenshot folder"
+  ansible.builtin.file:
+    path: "{{ execution_dir }}/data/screenshots"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  when:
+    - has_tesseract | default(false) | bool
+    - not node_attempt_failed | bool
+
+- name: "Check console prompt with OCR"
+  ansible.builtin.include_tasks:
+    file: wait_for_console_prompt_attempt.yml
+  loop: "{{ range(1, 12) | list }}"
+  loop_control:
+    loop_var: console_prompt_attempt
+    label: "attempt {{ console_prompt_attempt }}"
+  when:
+    - has_tesseract | default(false) | bool
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool
+
+- name: "Record console prompt timeout"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "console prompt did not appear for {{ node.vmname }} within 300 seconds"
+  when:
+    - has_tesseract | default(false) | bool
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool

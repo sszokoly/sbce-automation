@@ -1,5 +1,6 @@
 ---
 - name: "Run deployment attempt {{ deploy_attempt }} for {{ node.hostname | default(node.vmname) }}"
   ansible.builtin.include_tasks:
-    file: deploy_node_attempt_body.yml
+    file: deploy_node_attempt.yml
   when: not node_deploy_succeeded | bool
+...

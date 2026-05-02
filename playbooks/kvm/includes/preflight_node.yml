@@ -1,0 +1,48 @@
+---
+- name: "Add KVM platform host for preflight"
+  ansible.builtin.add_host:
+    hostname: kvm_host
+    ansible_host: "{{ preflight_node.platform_address }}"
+    ansible_user: "{{ preflight_node.platform_username }}"
+    ansible_password: "{{ preflight_node.platform_password }}"
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_password: "{{ preflight_node.platform_password }}"
+    ansible_port: 22
+
+- name: "Get VM list for preflight"
+  ansible.builtin.command:
+    argv:
+      - virsh
+      - --connect
+      - qemu:///system
+      - list
+      - --all
+      - --name
+  delegate_to: kvm_host
+  become: true
+  register: preflight_vm_list
+  changed_when: false
+
+- name: "Fail when VM already exists"
+  ansible.builtin.fail:
+    msg: "VM {{ preflight_node.vmname }} already exists"
+  when: preflight_node.vmname in preflight_vm_list.stdout_lines
+
+- name: "Check whether IP is already in use"
+  ansible.builtin.command:
+    argv:
+      - ping
+      - "{{ preflight_node.ip0 }}"
+      - -c
+      - "1"
+      - -w
+      - "1"
+  register: preflight_ping
+  changed_when: false
+  failed_when: false
+
+- name: "Fail when VM IP is already in use"
+  ansible.builtin.fail:
+    msg: "VM IP {{ preflight_node.ip0 }} already in use"
+  when: preflight_ping.rc == 0

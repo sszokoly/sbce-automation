@@ -1,0 +1,577 @@
+---
+- name: "Console bootstrap notice"
+  ansible.builtin.debug:
+    msg: >-
+      Running KVM console bootstrap for {{ node.hostname | default(node.vmname) }}.
+      console_prompt_check={{ console_prompt_check }}; auto mode may fall back to fixed waits.
+
+- name: "Enter your choice [1 - 4] : 1"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "1"
+    no_enter: true
+
+- name: Send ENTER and wait 10 seconds
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: 10
+  no_log: true
+  changed_when: false
+
+- name: "IP Mode: {{ node.ipmode }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipmode }}"
+    no_enter: true
+  when:
+    - node.ipmode is defined
+    - node.ipmode is not none
+    - node.ipmode | string | lower != "null"
+    - node.ipmode | string | length > 0
+
+- name: Send ipmode ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Appliance Type: {{ node.apptype }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.apptype }}"
+    no_enter: true
+  when: node.apptype is defined and (node.apptype | string | length) > 0
+
+- name: Send apptype ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Network Passphrase: {{ node.nwpass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.nwpass }}"
+    no_enter: true
+  when:
+    - node.apptype in ['EMS', 'SBCE']
+    - node.nwpass
+
+- name: Send nwpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: Set appliance_name # this appname cannot be the same as here during SBCE install
+  ansible.builtin.set_fact:
+    appliance_name: >-
+      {{ node.appname if node.apptype == 'EMS' else node.vmname }}
+  when:
+    - node.appname is defined and (node.appname | string | length) > 0
+    - node.vmname is defined and (node.vmname | string | length) > 0
+
+- name: "Appliance Name: {{ appliance_name }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ appliance_name }}"
+    no_enter: true
+  when: appliance_name is defined and (appliance_name | string | length) > 0
+
+- name: Send appname ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Installation Type: {{ node.ems_inst_type }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ems_inst_type }}"
+    no_enter: true
+  when:
+    - node.apptype == 'EMS'
+    - node.ems_inst_type
+
+- name: Send ems_inst_type ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+  when:
+    - node.apptype == 'EMS'
+    - node.ems_inst_type
+
+- name: "Management IP address: {{ node.ip0 }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ip0 }}"
+    no_enter: true
+  when: node.ip0 is defined and (node.ip0 | string | length) > 0
+
+- name: Send ip0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management subnet mask: {{ node.netmask0 }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.netmask0 }}"
+    no_enter: true
+  when: node.netmask0 is defined and (node.netmask0 | string | length) > 0
+
+- name: Send netmask0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management Gateway IP address (ipv4): {{ node.gateway }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.gateway }}"
+    no_enter: true
+  when: node.gateway is defined and (node.gateway | string | length) > 0
+
+- name: Send gateway ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management IP address (ipv6): {{ node.ipv6address0 }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipv6address0 }}"
+    no_enter: true
+  when: node.ipv6address0 is defined and (node.ipv6address0 | string | length) > 0
+
+- name: Send ipv6address0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management subnet network prefix length: {{ node.ipv6prefix0 }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipv6prefix0 }}"
+    no_enter: true
+  when: node.ipv6prefix0 is defined and (node.ipv6prefix0 | string | length) > 0
+
+- name: Send ipv6prefix0 ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management Gateway IP Address (ipv6): {{ node.ipv6gateway }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipv6gateway }}"
+    no_enter: true
+  when: node.ipv6gateway is defined and (node.ipv6gateway | string | length) > 0
+
+- name: Send ipv6gateway ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "EMS IP address (ipv4): {{ node.emsip }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.emsip }}"
+    no_enter: true
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+    - node.emsip is defined and (node.emsip | string | length) > 0
+
+- name: Send emsip ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+    - node.emsip is defined and (node.emsip | string | length) > 0
+
+- name: "EMS IP address (ipv6): {{ node.emsip_v6 }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.emsip_v6 }}"
+    no_enter: true
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+    - node.emsip_v6 is defined and (node.emsip_v6 | string | length) > 0
+
+- name: Send emsip_v6 ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+    - node.emsip_v6 is defined and (node.emsip_v6 | string | length) > 0
+
+- name: "NTP Server IP Address (ipv4): 127.127.1.0"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+
+- name: "NTP Server IP Address (ipv6):"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+
+- name: "List of DNS Servers: {{ node.dns }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.dns }}"
+    no_enter: true
+  when: node.dns is defined and (node.dns | string | length) > 0
+
+- name: Send dns ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Domain Suffix: {{ node.domain_suffix }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.domain_suffix }}"
+    no_enter: true
+  when: node.domain_suffix is defined and (node.domain_suffix | string | length) > 0
+
+- name: Send domain_suffix ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "Y"
+    no_enter: true
+    sleep_time: "{{ sleep_time }}"
+
+- name: Send confirmation ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "First and Last Name: {{ node.first_last_name }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.first_last_name }}"
+    no_enter: true
+  when: node.first_last_name is defined and (node.first_last_name | string | length) > 0
+
+- name: Send first_last_name ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Organizational Unit: {{ node.organizational_unit }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.organizational_unit }}"
+    no_enter: true
+  when: node.organizational_unit is defined and (node.organizational_unit | string | length) > 0
+
+- name: Send organizational_unit ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Organization: {{ node.organization }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.organization }}"
+    no_enter: true
+  when: node.organization is defined and (node.organization | string | length) > 0
+
+- name: Send organization ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "City or Locality: {{ node.locality }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.locality }}"
+    no_enter: true
+  when: node.locality is defined and (node.locality | string | length) > 0
+
+- name: Send locality ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "State or Province: {{ node.state_province }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.state_province }}"
+    no_enter: true
+  when: node.state_province is defined and (node.state_province | string | length) > 0
+
+- name: Send state_province ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Country Code ( 2 letter code ): {{ node.country }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.country }}"
+    no_enter: true
+  when: node.country is defined and (node.country | string | length) > 0
+
+- name: Send country ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "Y"
+    no_enter: true
+    sleep_time: "{{ sleep_time }}"
+
+- name: Send confirmation ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Please select a continent or ocean (11 = none): 11"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "11"
+    no_enter: true
+
+- name: Confirm continent (default Yes)
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Please enter the desired value of the TZ environment variable: GMT-4"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "GMT-4"
+    no_enter: true
+
+- name: Confirm timezone (default Yes)
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Is the above information OK? (1 Yes, 2 No): 1"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "1"
+    no_enter: true
+
+- name: Send ENTER and wait 90 seconds
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: 90
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'root' user: {{ node.rootpass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.rootpass }}"
+    no_enter: true
+  when: node.rootpass is defined and (node.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'root' user: {{ node.rootpass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.rootpass }}"
+    no_enter: true
+  when: node.rootpass is defined and (node.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'ipcs' user: {{ node.ipcspass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipcspass }}"
+    no_enter: true
+  when: node.ipcspass is defined and (node.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'ipcs' user: {{ node.ipcspass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipcspass }}"
+    no_enter: true
+  when: node.ipcspass is defined and (node.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'grub' user: {{ node.grubpass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.grubpass }}"
+    no_enter: true
+  when: node.grubpass is defined and (node.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'grub' user: {{ node.grubpass }}"
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.grubpass }}"
+    no_enter: true
+  when: node.grubpass is defined and (node.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  kvm_guest_sendkey:
+    name: "{{ node.vmname }}"
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
