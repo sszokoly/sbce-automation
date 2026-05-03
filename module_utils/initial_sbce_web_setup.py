@@ -6,6 +6,7 @@
 import sys
 import time
 import argparse
+import json
 import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -182,6 +183,99 @@ def is_sbce_installable(driver: WebDriver, identifiers: list[str]) -> Optional[W
     driver.switch_to.default_content()
     return None
 
+
+def _device_status(row: WebElement) -> str:
+    status_elements = row.find_elements(By.XPATH, ".//*[contains(@class, 'status-')]")
+    for element in status_elements:
+        classes = (element.get_attribute("class") or "").split()
+        for class_name in classes:
+            if class_name.startswith("status-"):
+                return class_name.removeprefix("status-").lower()
+    return ""
+
+
+def _device_installable(row: WebElement) -> bool:
+    install_links = row.find_elements(
+        By.XPATH,
+        ".//*[contains(@class, 'action-list')]//a[normalize-space()='Install' and contains(@onclick, 'installSystem(')]",
+    )
+    return len(install_links) > 0
+
+
+def _collect_devices_from_current_frame(driver: WebDriver) -> dict[str, dict[str, object]]:
+    devices: dict[str, dict[str, object]] = {}
+    try:
+        rows = WebDriverWait(driver, WAIT_TIMEOUT).until(
+            EC.presence_of_all_elements_located((By.XPATH, "//tr[@data-node-id and @data-name]"))
+        )
+    except TimeoutException:
+        return devices
+
+    for row in rows:
+        name = (row.get_attribute("data-name") or "").strip()
+        if not name:
+            continue
+
+        cells = row.find_elements(By.TAG_NAME, "td")
+        management_ip = cells[1].text.strip().lower() if len(cells) > 1 else ""
+        version = cells[2].text.strip().lower() if len(cells) > 2 else ""
+        if version == "---":
+            version = ""
+
+        devices[name] = {
+            "management_ip": management_ip,
+            "version": version,
+            "status": _device_status(row),
+            "installable": _device_installable(row),
+        }
+    return devices
+
+
+def list_devices(driver: WebDriver) -> dict[str, dict[str, object]]:
+    wait_for_clickable(driver, By.ID, "menu-device-management").click()
+
+    devices = _collect_devices_from_current_frame(driver)
+    try:
+        iframes = WebDriverWait(driver, WAIT_TIMEOUT).until(
+            EC.presence_of_all_elements_located((By.TAG_NAME, "iframe"))
+        )
+    except TimeoutException:
+        driver.switch_to.default_content()
+        return devices
+
+    for i in range(len(iframes)):
+        driver.switch_to.default_content()
+        driver.switch_to.frame(i)
+        devices.update(_collect_devices_from_current_frame(driver))
+
+    driver.switch_to.default_content()
+    return devices
+
+
+def is_device_installable(devices: dict[str, dict[str, object]], identifiers: list[str]) -> bool:
+    normalized_identifiers = {identifier.strip().lower() for identifier in identifiers if identifier and identifier.strip()}
+    for name, device in devices.items():
+        values = {
+            name.lower(),
+            str(device.get("management_ip", "")).lower(),
+        }
+        if values & normalized_identifiers and bool(device.get("installable")):
+            return True
+    return False
+
+
+def is_device_commissioned(devices: dict[str, dict[str, object]], identifiers: list[str]) -> bool:
+    normalized_identifiers = {identifier.strip().lower() for identifier in identifiers if identifier and identifier.strip()}
+    for name, device in devices.items():
+        values = {
+            name.lower(),
+            str(device.get("management_ip", "")).lower(),
+        }
+        if values & normalized_identifiers and device.get("status") == "commissioned":
+            return True
+    return False
+
+
 def has_add_button(driver: WebDriver) -> Optional[WebElement]:
     wait_for_clickable(driver, By.ID, "menu-device-management").click()
 
@@ -204,6 +298,7 @@ def has_add_button(driver: WebDriver) -> Optional[WebElement]:
 
     driver.switch_to.default_content()
     return None
+
 
 def install_sbce(
     install_link: WebElement,
@@ -310,6 +405,7 @@ def install_sbce(
 
     return commissioned
 
+
 def add_node(
     add_button: WebElement,
     driver: WebDriver,
@@ -396,6 +492,88 @@ def do_change_password(host: str, ucsec_password: str) -> int:
         return 0
     except Exception as e:
         _log(f"Password change failed: {e}")
+        return 1
+    finally:
+        driver.quit()
+
+
+def do_check_login(host: str, ucsec_password: str) -> int:
+    driver = webdriver.Chrome(options=chrome_options)
+    try:
+        driver.get(f"https://{host}/sbc/")
+        if has_eula(driver, host):
+            _log("EULA page found; login is not available yet.")
+            return 1
+        if is_login_page(driver):
+            enter_credentials(driver, password=ucsec_password)
+            if has_login_failed(driver):
+                _log("Login failed with the provided credentials.")
+                return 1
+            _log("Login successful.")
+            return 0
+        _log("Already logged in or login page not required.")
+        return 0
+    except Exception as e:
+        _log(f"Login check failed: {e}")
+        return 1
+    finally:
+        driver.quit()
+
+
+def do_list_devices(host: str, ucsec_password: str) -> int:
+    driver = webdriver.Chrome(options=chrome_options)
+    try:
+        driver.get(f"https://{host}/sbc/")
+        if has_eula(driver, host):
+            raise RuntimeError("EULA page found; device management is not available yet")
+        if is_login_page(driver):
+            enter_credentials(driver, password=ucsec_password)
+            if has_login_failed(driver):
+                raise RuntimeError("login failed with the provided credentials")
+        print(json.dumps(list_devices(driver), indent=2))
+        return 0
+    except Exception as e:
+        print(f"List devices failed: {e}", file=sys.stderr)
+        return 1
+    finally:
+        driver.quit()
+
+
+def do_check_installable(
+    host: str,
+    ucsec_password: str,
+    name: Optional[str] = None,
+    ip: Optional[str] = None,
+    name2: Optional[str] = None,
+    ip2: Optional[str] = None,
+) -> int:
+    driver = webdriver.Chrome(options=chrome_options)
+    try:
+        driver.get(f"https://{host}/sbc/")
+        if has_eula(driver, host):
+            raise RuntimeError("EULA page found; device management is not available yet")
+        if is_login_page(driver):
+            enter_credentials(driver, password=ucsec_password)
+            if has_login_failed(driver):
+                raise RuntimeError("login failed with the provided credentials")
+        identifiers = [value for value in (name, ip, name2, ip2) if value]
+        devices = list_devices(driver)
+        installable = is_device_installable(devices, identifiers)
+        commissioned = is_device_commissioned(devices, identifiers)
+        result = {
+            "installable": installable,
+            "commissioned": commissioned,
+            "raw_status": "installable" if installable else ("commissioned" if commissioned else "not_installable"),
+            "devices": devices,
+            "name": name,
+            "ip": ip,
+            "name2": name2,
+            "ip2": ip2,
+        }
+        print(json.dumps(result, indent=2))
+        return 0
+    except Exception as e:
+        print(f"Check installable failed: {e}", file=sys.stderr)
         return 1
     finally:
         driver.quit()
@@ -499,11 +677,14 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--eula",            action="store_true", help="Accept the EULA")
     mode.add_argument("--change-password", action="store_true", help="Change the ucsec password from default")
+    mode.add_argument("--check-login",     action="store_true", help="Check EMS Web UI login")
+    mode.add_argument("--list-devices",    action="store_true", help="List devices from EMS Device Management")
+    mode.add_argument("--check-installable", action="store_true", help="Check whether device is installable from EMS Device Management")
     mode.add_argument("--install-sbce",    action="store_true", help="Login and install the SBCE appliance")
     mode.add_argument("--add-node",        action="store_true", help="Add SBCE or EMS node(s)")
 
     common = parser.add_argument_group("common arguments")
-    common.add_argument("--host",           help="IP or hostname of the EMS (e.g. 192.168.122.10)")
+    common.add_argument("--host",           help="IP or hostname of the EMS (e.g. 10.10.10.10)")
     common.add_argument("--ucsec-password", help="ucsec account password")
     common.add_argument("--debug",          action="store_true", help="Enable debug output")
 
@@ -538,34 +719,40 @@ def _require(args: argparse.Namespace, *names: str) -> None:
 
 
 if __name__ == "__main__":
-    #sys.argv += ["--eula", "--host", "192.168.122.20", "--debug"]
-    #sys.argv += ["--change-password", "--host", "192.168.122.20", "--ucsec-password", "cmb@Dm1n", "--debug"]
+    #sys.argv += ["--eula", "--host", "10.10.10.10", "--debug"]
+    #sys.argv += ["--change-password", "--host", "10.10.10.10", "--ucsec-password", "cmb@Dm1n", "--debug"]
     # sys.argv += [
     #     "--install-sbce",
-    #     "--host",           "192.168.122.10",
-    #     "--ucsec-password", "cmb@Dm1n",
+    #     "--host",           "10.10.10.10",
+    #     "--ucsec-password", "sbc10_cmb@Dm1n",
     #     "--temp-appname",   "sbce3",
     #     "--appname",        "sbce-vm",
     #     "--dns",            "192.168.122.1",
     #     "--sig-iface",      "A1",
     #     "--sig-name",       "A1_internal",
     #     "--sig-mask",       "255.255.255.0",
-    #     "--sig-gw",         "192.168.122.1",
-    #     "--sig-ip",         "192.168.122.11",
-    #     "--sig-pub-ip",     "142.219.32.2",
+    #     "--sig-gw",         "10.10.11.1",
+    #     "--sig-ip",         "10.10.11.10",
+    #     "--sig-pub-ip",     "142.219.1.111",
     #     "--debug"
     # ]
 
     # sys.argv += [
     #     "--add-node",
-    #     "--host",           "192.168.122.20",
+    #     "--host",           "10.10.10.10",
     #     "--ucsec-password", "cmb@Dm1n",
     #     "--type",           "ha",
     #     "--name",           "sbce1",
-    #     "--ip",             "192.168.122.21",
+    #     "--ip",             "10.10.10.11",
     #     "--name2",          "sbce2",
-    #     "--ip2",            "192.168.122.22",
+    #     "--ip2",            "10.10.10.12",
     #     "--debug"
+    # ]
+
+    # sys.argv += [
+    #     "--list-devices",
+    #     "--host",           "10.10.10.10",
+    #     "--ucsec-password", "sbc10_cmb@Dm1n"
     # ]
 
     args = parse_args()
@@ -578,6 +765,25 @@ if __name__ == "__main__":
     elif args.change_password:
         _require(args, "ucsec_password")
         rv = do_change_password(host=args.host, ucsec_password=args.ucsec_password)
+
+    elif args.check_login:
+        _require(args, "ucsec_password")
+        rv = do_check_login(host=args.host, ucsec_password=args.ucsec_password)
+
+    elif args.list_devices:
+        _require(args, "ucsec_password")
+        rv = do_list_devices(host=args.host, ucsec_password=args.ucsec_password)
+
+    elif args.check_installable:
+        _require(args, "ucsec_password")
+        rv = do_check_installable(
+            host=args.host,
+            ucsec_password=args.ucsec_password,
+            name=args.name,
+            ip=args.ip,
+            name2=args.name2,
+            ip2=args.ip2,
+        )
 
     elif args.install_sbce:
         _require(args, "ucsec_password", "temp_appname", "appname", "dns",

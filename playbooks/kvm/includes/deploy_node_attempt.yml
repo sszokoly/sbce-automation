@@ -204,50 +204,23 @@
     file: console_bootstrap.yml
   when: not node_attempt_failed | bool
 
-- name: "Add deployed node to in-memory SSH inventory"
-  ansible.builtin.add_host:
-    hostname: "{{ node.hostname | default(node.vmname) }}"
-    ansible_host: "{{ node.ip0 }}"
-    ansible_user: ipcs
-    ansible_password: "{{ node.ipcspass }}"
-    ansible_become_user: root
-    ansible_become_password: "{{ node.rootpass }}"
-    ansible_become_method: su
-    ansible_port: 22
-  when: not node_attempt_failed | bool
-
-- name: "Wait for SSH on {{ node.hostname | default(node.vmname) }}"
-  ansible.builtin.wait_for_connection:
-    delay: 30
-    timeout: 600
-  delegate_to: "{{ node.hostname | default(node.vmname) }}"
-  register: node_ssh_result
-  failed_when: false
-  when: not node_attempt_failed | bool
-
-- name: "Record SSH readiness failure"
-  ansible.builtin.set_fact:
-    node_attempt_failed: true
-    node_attempt_error: "SSH did not become ready for {{ node.hostname | default(node.vmname) }}"
-  when:
-    - node_ssh_result is defined
-    - node_ssh_result.failed | default(false)
-
 - name: "Post-bootstrap configuration {{ node.hostname | default(node.vmname) }}"
   when: not node_attempt_failed | bool
   block:
     - name: "Run post-bootstrap configuration"
       ansible.builtin.include_tasks:
         file: post_bootstrap_configuration.yml
-      vars:
-        args: "{{ node }}"
-        post_bootstrap_skip_connection_setup: true
 
   rescue:
     - name: "Record post-bootstrap configuration failure"
       ansible.builtin.set_fact:
         node_attempt_failed: true
         node_attempt_error: "post-bootstrap configuration failed: {{ ansible_failed_task.name | default('unknown task') }}: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
+
+- name: "Record node as ready for final backup"
+  ansible.builtin.set_fact:
+    current_group_backup_nodes: "{{ (current_group_backup_nodes | default([])) + [node] }}"
+  when: not node_attempt_failed | bool
 
 - name: "Clean up failed deployment attempt"
   ansible.builtin.include_tasks:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import traceback
 
 from ansible.module_utils.basic import AnsibleModule
@@ -22,6 +23,12 @@ def _validate_args(module, args):
 
     if args.change_password:
         require("ucsec_password")
+    elif args.check_login or args.list_devices:
+        require("ucsec_password")
+    elif args.check_installable:
+        require("ucsec_password")
+        if not any((args.name, args.ip, args.name2, args.ip2)):
+            return "at least one of --name, --ip, --name2, or --ip2 is required for --check-installable"
     elif args.install_sbce:
         require(
             "ucsec_password",
@@ -57,6 +64,28 @@ def _run(args):
         return web_setup.do_change_password(
             host=args.host,
             ucsec_password=args.ucsec_password,
+        )
+
+    if args.check_login:
+        return web_setup.do_check_login(
+            host=args.host,
+            ucsec_password=args.ucsec_password,
+        )
+
+    if args.list_devices:
+        return web_setup.do_list_devices(
+            host=args.host,
+            ucsec_password=args.ucsec_password,
+        )
+
+    if args.check_installable:
+        return web_setup.do_check_installable(
+            host=args.host,
+            ucsec_password=args.ucsec_password,
+            name=args.name,
+            ip=args.ip,
+            name2=args.name2,
+            ip2=args.ip2,
         )
 
     if args.install_sbce:
@@ -136,12 +165,30 @@ def main():
             exception=traceback.format_exc(),
         )
 
+    changed = rc == 0 and any((args.eula, args.change_password, args.install_sbce, args.add_node))
     result = dict(
-        changed=(rc == 0),
+        changed=changed,
         rc=rc,
         stdout=stdout.getvalue(),
         stderr=stderr.getvalue(),
     )
+
+    if args.check_login:
+        result["login_ok"] = rc == 0
+
+    if args.list_devices or args.check_installable:
+        try:
+            data = json.loads(result["stdout"] or "{}")
+        except json.JSONDecodeError:
+            data = {}
+        result["data"] = data
+        if args.list_devices:
+            result["devices"] = data
+        else:
+            result["installable"] = bool(data.get("installable"))
+            result["commissioned"] = bool(data.get("commissioned"))
+            result["raw_status"] = data.get("raw_status", "")
+            result["devices"] = data.get("devices", {})
 
     if rc != 0:
         module.fail_json(msg="sbce_web_bootstrap failed", **result)

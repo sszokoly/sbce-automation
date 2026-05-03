@@ -104,6 +104,19 @@ def main() -> int:
                 errors.append(f"{sheet['_sheet']}: duplicate {field} '{value}' also used by {previous}")
             seen[field][value] = sheet["_sheet"]
 
+    ip0_by_value = {text(sheet.get("ip0")): sheet["_sheet"] for sheet in sheets if text(sheet.get("ip0"))}
+    for sheet in sheets:
+        sig_ip = text(sheet.get("sig_ip"))
+        if not sig_ip:
+            continue
+        ip0 = text(sheet.get("ip0"))
+        if sig_ip == ip0:
+            errors.append(f"{sheet['_sheet']}: sig_ip '{sig_ip}' must be different from ip0")
+            continue
+        ip0_owner = ip0_by_value.get(sig_ip)
+        if ip0_owner:
+            errors.append(f"{sheet['_sheet']}: sig_ip '{sig_ip}' conflicts with ip0 on {ip0_owner}")
+
     primary_by_ip: dict[str, dict[str, Any]] = {}
     primary_groups: dict[str, dict[str, Any]] = {}
     for sheet in sheets:

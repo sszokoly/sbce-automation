@@ -1,0 +1,7 @@
+---
+- name: "Run backup on {{ backup_node.hostname | default(backup_node.vmname) }}"
+  ansible.builtin.command:
+    argv:
+      - /usr/local/ipcs/icu3/scripts/sbc-take-backup
+    chdir: /home/ipcs
+  delegate_to: "{{ backup_node.hostname | default(backup_node.vmname) }}"

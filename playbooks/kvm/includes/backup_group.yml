@@ -1,0 +1,8 @@
+---
+- name: "Run backup on successfully configured node"
+  ansible.builtin.include_tasks:
+    file: backup_node.yml
+  loop: "{{ backup_nodes }}"
+  loop_control:
+    loop_var: backup_node
+    label: "{{ backup_node.hostname | default(backup_node.vmname) }}"

@@ -6,10 +6,8 @@
       vars:
         primary_child: "{{ sbce_unit.nodes[0] }}"
         secondary_child: "{{ sbce_unit.nodes[1] if sbce_unit.type == 'ha' else {} }}"
-      ansible.builtin.command:
+      sbce_web_bootstrap:
         argv:
-          - "{{ ansible_playbook_python }}"
-          - "{{ playbook_dir }}/scripts/webui_query.py"
           - --host
           - "{{ ems_node.ip0 }}"
           - --ucsec-password
@@ -26,15 +24,15 @@
       register: installable_query
       changed_when: false
       failed_when: false
-      until: (installable_query.stdout | default('{}') | from_json).data.installable | default(false)
+      until: installable_query.installable | default(false)
       retries: "{{ ((sbce_installable_timeout | int) / (sbce_installable_poll_interval | int)) | round(0, 'ceil') | int }}"
       delay: "{{ sbce_installable_poll_interval | int }}"
       delegate_to: localhost
 
     - name: "Record installable query result"
       ansible.builtin.set_fact:
-        sbce_unit_installable: "{{ (installable_query.stdout | default('{}') | from_json).data.installable | default(false) }}"
-        sbce_unit_last_error: "{{ (installable_query.stdout | default('{}') | from_json).data.raw_status | default('not installable') }}"
+        sbce_unit_installable: "{{ installable_query.installable | default(false) }}"
+        sbce_unit_last_error: "{{ installable_query.raw_status | default('not installable') }}"
 
   rescue:
     - name: "Record SBCE installable check failure"

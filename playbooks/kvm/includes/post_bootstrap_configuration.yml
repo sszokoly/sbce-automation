@@ -1,4 +1,4 @@
-- name: Add SBCE to in-memory inventory
+- name: "Add {{ node.hostname | default(node.vmname) }} to in-memory inventory"
   ansible.builtin.add_host:
     hostname: "{{ node.hostname | default(node.vmname) }}"
     ansible_host: "{{ node.ip0 }}"
@@ -10,15 +10,12 @@
     ansible_port: 22
     ansible_timeout: 30
     ansible_python_interpreter: /usr/libexec/platform-python
-  no_log: false
-  when: not post_bootstrap_skip_connection_setup | default(false) | bool
 
 - name: "Wait for {{ node.hostname | default(node.vmname) }} SSH to become available"
   ansible.builtin.wait_for_connection:
     delay: 30
     timeout: 600
   delegate_to: "{{ node.hostname | default(node.vmname) }}"
-  when: not post_bootstrap_skip_connection_setup | default(false) | bool
 
 - name: "Pause another 60 secs"
   ansible.builtin.pause:
