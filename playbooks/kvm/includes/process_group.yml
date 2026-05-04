@@ -98,12 +98,3 @@
       ansible.builtin.debug:
         msg: >-
           EMS group {{ current_group.primary.hostname }} {{ 'failed and was cleaned up' if current_group_failed else 'completed' }}{{ ': ' ~ current_group_failure if current_group_failed else '' }}
-
-# - name: "Run final backups for EMS group {{ current_group.primary.hostname }}"
-#   ansible.builtin.include_tasks:
-#     file: backup_group.yml
-#   vars:
-#     backup_nodes: "{{ current_group_backup_nodes }}"
-#   when:
-#     - not current_group_failed | bool
-#     - current_group_backup_nodes | length > 0
