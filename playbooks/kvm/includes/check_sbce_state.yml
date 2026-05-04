@@ -32,10 +32,14 @@
     - name: "Record installable query result"
       ansible.builtin.set_fact:
         sbce_unit_installable: "{{ installable_query.installable | default(false) }}"
+        sbce_unit_primary_installable: "{{ installable_query.primary_installable | default(false) }}"
+        sbce_unit_secondary_installable: "{{ installable_query.secondary_installable | default(sbce_unit.type != 'ha') }}"
         sbce_unit_last_error: "{{ installable_query.raw_status | default('not installable') }}"
 
   rescue:
     - name: "Record SBCE installable check failure"
       ansible.builtin.set_fact:
         sbce_unit_installable: false
+        sbce_unit_primary_installable: false
+        sbce_unit_secondary_installable: false
         sbce_unit_last_error: "{{ ansible_failed_task.name | default('unknown task') }}: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"

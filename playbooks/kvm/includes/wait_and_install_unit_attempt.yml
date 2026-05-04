@@ -1,0 +1,50 @@
+---
+- name: "Check SBCE unit installability on deployment attempt {{ sbce_installable_deploy_attempt }}"
+  ansible.builtin.include_tasks:
+    file: check_sbce_state.yml
+  vars:
+    installable_attempt: "{{ sbce_installable_deploy_attempt }}"
+  when:
+    - not current_group_failed | default(false) | bool
+    - not sbce_unit_installable | bool
+
+- name: "Redeploy non-installable SBCE node(s) for {{ sbce_unit.sheets | join(' + ') }}"
+  block:
+    - name: "Clean up and redeploy non-installable SBCE node(s)"
+      ansible.builtin.include_tasks:
+        file: redeploy_uninstallable_sbce_nodes.yml
+  rescue:
+    - name: "Clean up SBCE unit after redeploy failure"
+      ansible.builtin.include_tasks:
+        file: cleanup_unit.yml
+
+    - name: "Mark EMS group failed after SBCE redeploy failure"
+      ansible.builtin.set_fact:
+        current_group_failed: true
+        current_group_failure: >-
+          SBCE unit {{ sbce_unit.sheets | join(' + ') }} redeploy failed on deployment attempt
+          {{ sbce_installable_deploy_attempt }}: {{ ansible_failed_task.name | default('unknown task') }}:
+          {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}
+  when:
+    - not current_group_failed | default(false) | bool
+    - not sbce_unit_installable | bool
+    - sbce_installable_deploy_attempt | int < (sbce_unit_installable_deploy_attempts | default(sbce_installable_deploy_attempts) | int)
+
+- name: "Clean up SBCE unit after installability deployment attempts exhausted"
+  ansible.builtin.include_tasks:
+    file: cleanup_unit.yml
+  when:
+    - not current_group_failed | default(false) | bool
+    - not sbce_unit_installable | bool
+    - sbce_installable_deploy_attempt | int >= (sbce_unit_installable_deploy_attempts | default(sbce_installable_deploy_attempts) | int)
+
+- name: "Mark EMS group failed after SBCE unit installability attempts exhausted"
+  ansible.builtin.set_fact:
+    current_group_failed: true
+    current_group_failure: >-
+      SBCE unit {{ sbce_unit.sheets | join(' + ') }} did not become installable after
+      {{ sbce_unit_installable_deploy_attempts | default(sbce_installable_deploy_attempts) }} deployment attempt(s): {{ sbce_unit_last_error }}
+  when:
+    - not current_group_failed | default(false) | bool
+    - not sbce_unit_installable | bool
+    - sbce_installable_deploy_attempt | int >= (sbce_unit_installable_deploy_attempts | default(sbce_installable_deploy_attempts) | int)

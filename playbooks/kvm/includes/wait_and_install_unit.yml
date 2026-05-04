@@ -1,28 +1,27 @@
 ---
-- name: "Initialize installable retry state"
+- name: "Initialize installability deployment state"
   ansible.builtin.set_fact:
     sbce_unit_installable: false
+    sbce_unit_primary_installable: false
+    sbce_unit_secondary_installable: false
     sbce_unit_last_error: ""
+    sbce_unit_installable_deploy_attempts: "{{ sbce_installable_deploy_attempts | int }}"
+  when: not current_group_failed | default(false) | bool
 
-- name: "Wait for SBCE unit to become installable"
+- name: "Wait, redeploy, and recheck SBCE unit installability"
   ansible.builtin.include_tasks:
-    file: check_sbce_state.yml
-  loop: "{{ range(1, (sbce_installable_retries | int) + 1) | list }}"
+    file: wait_and_install_unit_attempt.yml
+  loop: "{{ range(1, (sbce_installable_deploy_attempts | int) + 1) | list }}"
   loop_control:
-    loop_var: installable_attempt
-    label: "installable attempt {{ installable_attempt }}"
-  when: not sbce_unit_installable | bool
-
-- name: "Clean up SBCE unit that did not become installable"
-  ansible.builtin.include_tasks:
-    file: cleanup_unit.yml
-  when: not sbce_unit_installable | bool
-
-- name: "Fail if SBCE unit never became installable"
-  ansible.builtin.fail:
-    msg: "SBCE unit {{ sbce_unit.sheets | join(' + ') }} did not become installable after {{ sbce_installable_retries }} attempt(s): {{ sbce_unit_last_error }}"
-  when: not sbce_unit_installable | bool
+    loop_var: sbce_installable_deploy_attempt
+    label: "deployment attempt {{ sbce_installable_deploy_attempt }}"
+  when:
+    - not current_group_failed | default(false) | bool
+    - not sbce_unit_installable | bool
 
 - name: "Install/commission installable SBCE unit"
   ansible.builtin.include_tasks:
     file: webui_install_unit.yml
+  when:
+    - not current_group_failed | default(false) | bool
+    - sbce_unit_installable | bool

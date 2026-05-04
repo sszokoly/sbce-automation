@@ -3,7 +3,6 @@
   ansible.builtin.set_fact:
     current_group_failed: false
     current_group_failure: ""
-    current_group_backup_nodes: []
 
 - name: "Preflight EMS group {{ current_group.primary.hostname }}"
   ansible.builtin.include_tasks:
@@ -68,7 +67,9 @@
         label: "{{ sbce_unit.sheets | join(' + ') }}"
       vars:
         ems_node: "{{ current_group.primary }}"
-      when: not current_group.coresident | bool
+      when:
+        - not current_group.coresident | bool
+        - not current_group_failed | bool
 
     - name: "Deploy secondary EMS nodes for {{ current_group.primary.hostname }}"
       ansible.builtin.include_tasks:
@@ -79,6 +80,7 @@
         label: "{{ node.hostname | default(node.vmname) }}"
       vars:
         group_primary: "{{ current_group.primary }}"
+      when: not current_group_failed | bool
 
 
   rescue:
@@ -97,4 +99,4 @@
     - name: "Report EMS group result"
       ansible.builtin.debug:
         msg: >-
-          EMS group {{ current_group.primary.hostname }} {{ 'failed and was cleaned up' if current_group_failed else 'completed' }}{{ ': ' ~ current_group_failure if current_group_failed else '' }}
+          EMS group {{ current_group.primary.hostname }} {{ 'failed' if current_group_failed else 'completed' }}{{ ': ' ~ current_group_failure if current_group_failed else '' }}

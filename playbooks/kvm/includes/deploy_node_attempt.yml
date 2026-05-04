@@ -217,11 +217,6 @@
         node_attempt_failed: true
         node_attempt_error: "post-bootstrap configuration failed: {{ ansible_failed_task.name | default('unknown task') }}: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
 
-- name: "Record node as ready for final backup"
-  ansible.builtin.set_fact:
-    current_group_backup_nodes: "{{ (current_group_backup_nodes | default([])) + [node] }}"
-  when: not node_attempt_failed | bool
-
 - name: "Clean up failed deployment attempt"
   ansible.builtin.include_tasks:
     file: cleanup_node.yml

@@ -6,7 +6,7 @@
     execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
     sleep_time: 2
     vm_deploy_retries: 3
-    sbce_installable_retries: 3
+    sbce_installable_deploy_attempts: 3
     sbce_installable_timeout: 600
     sbce_installable_poll_interval: 60
     sbce_boot_wait: 120
@@ -95,12 +95,3 @@
         loop_var: current_group
         label: "{{ current_group.primary.hostname | default(current_group.primary.vmname) }}"
       tags: [step01]
-
-# - name: "Run final backups for EMS group {{ current_group.primary.hostname }}"
-#   ansible.builtin.include_tasks:
-#     file: backup_group.yml
-#   vars:
-#     backup_nodes: "{{ current_group_backup_nodes }}"
-#   when:
-#     - not current_group_failed | bool
-#     - current_group_backup_nodes | length > 0

@@ -252,28 +252,20 @@ def list_devices(driver: WebDriver) -> dict[str, dict[str, object]]:
     return devices
 
 
-def is_device_installable(devices: dict[str, dict[str, object]], identifiers: list[str]) -> bool:
-    normalized_identifiers = {identifier.strip().lower() for identifier in identifiers if identifier and identifier.strip()}
+def _matching_device(
+    devices: dict[str, dict[str, object]],
+    name: Optional[str] = None,
+    ip: Optional[str] = None,
+) -> Optional[dict[str, object]]:
+    normalized_identifiers = {identifier.strip().lower() for identifier in (name, ip) if identifier and identifier.strip()}
     for name, device in devices.items():
         values = {
             name.lower(),
             str(device.get("management_ip", "")).lower(),
         }
-        if values & normalized_identifiers and bool(device.get("installable")):
-            return True
-    return False
-
-
-def is_device_commissioned(devices: dict[str, dict[str, object]], identifiers: list[str]) -> bool:
-    normalized_identifiers = {identifier.strip().lower() for identifier in identifiers if identifier and identifier.strip()}
-    for name, device in devices.items():
-        values = {
-            name.lower(),
-            str(device.get("management_ip", "")).lower(),
-        }
-        if values & normalized_identifiers and device.get("status") == "commissioned":
-            return True
-    return False
+        if values & normalized_identifiers:
+            return device
+    return None
 
 
 def has_add_button(driver: WebDriver) -> Optional[WebElement]:
@@ -556,14 +548,38 @@ def do_check_installable(
             enter_credentials(driver, password=ucsec_password)
             if has_login_failed(driver):
                 raise RuntimeError("login failed with the provided credentials")
-        identifiers = [value for value in (name, ip, name2, ip2) if value]
         devices = list_devices(driver)
-        installable = is_device_installable(devices, identifiers)
-        commissioned = is_device_commissioned(devices, identifiers)
+        primary = _matching_device(devices, name, ip)
+        secondary = _matching_device(devices, name2, ip2) if name2 or ip2 else None
+        primary_installable = bool(primary and primary.get("installable"))
+        secondary_installable = bool(secondary and secondary.get("installable")) if name2 or ip2 else True
+        primary_commissioned = bool(primary and primary.get("status") == "commissioned")
+        secondary_commissioned = bool(secondary and secondary.get("status") == "commissioned") if name2 or ip2 else True
+        installable = primary_installable and secondary_installable
+        commissioned = primary_commissioned and secondary_commissioned
+        if installable:
+            raw_status = "installable"
+        elif commissioned:
+            raw_status = "commissioned"
+        elif not primary:
+            raw_status = "primary_not_found"
+        elif name2 or ip2:
+            if not secondary:
+                raw_status = "secondary_not_found"
+            elif not primary_installable:
+                raw_status = "primary_not_installable"
+            else:
+                raw_status = "secondary_not_installable"
+        else:
+            raw_status = "not_installable"
         result = {
             "installable": installable,
             "commissioned": commissioned,
-            "raw_status": "installable" if installable else ("commissioned" if commissioned else "not_installable"),
+            "primary_installable": primary_installable,
+            "secondary_installable": secondary_installable,
+            "primary_commissioned": primary_commissioned,
+            "secondary_commissioned": secondary_commissioned,
+            "raw_status": raw_status,
             "devices": devices,
             "name": name,
             "ip": ip,

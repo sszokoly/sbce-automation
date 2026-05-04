@@ -187,6 +187,10 @@ def main():
         else:
             result["installable"] = bool(data.get("installable"))
             result["commissioned"] = bool(data.get("commissioned"))
+            result["primary_installable"] = bool(data.get("primary_installable"))
+            result["secondary_installable"] = bool(data.get("secondary_installable"))
+            result["primary_commissioned"] = bool(data.get("primary_commissioned"))
+            result["secondary_commissioned"] = bool(data.get("secondary_commissioned"))
             result["raw_status"] = data.get("raw_status", "")
             result["devices"] = data.get("devices", {})
 
