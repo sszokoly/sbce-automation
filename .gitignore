@@ -220,3 +220,5 @@ playbooks/test/*
 inventory/*
 facts_cache/*
 launch.json
+.agents/*
+playbooks/test/*
