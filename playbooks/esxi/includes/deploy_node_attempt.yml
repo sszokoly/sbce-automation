@@ -1,0 +1,159 @@
+---
+- name: "Prepare deployment attempt {{ deploy_attempt }} for {{ node.hostname | default(node.vmname) }}"
+  vars:
+    source_filename: "{{ node.ovf | basename }}"
+  ansible.builtin.set_fact:
+    node_attempt_failed: false
+    node_attempt_error: ""
+    node_source_filename: "{{ source_filename }}"
+    node_nic_order: "{{ ['M1', 'M2'] if node.apptype == 'EMS' else ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] }}"
+    node_network_adapters: []
+
+- name: "Check source image on controller"
+  ansible.builtin.stat:
+    path: "{{ node.ovf }}"
+    get_checksum: false
+  register: node_source_local
+  delegate_to: localhost
+  become: false
+
+- name: "Record missing source image"
+  ansible.builtin.set_fact:
+    node_attempt_failed: true
+    node_attempt_error: "source OVA/OVF is not available on the controller: {{ node.ovf }}"
+  when: not node_source_local.stat.exists | bool
+
+- name: "Build ESXi NIC adapter list"
+  ansible.builtin.set_fact:
+    node_network_adapters: >-
+      {{ node_network_adapters + [{
+        'key': item,
+        'network': node[item],
+        'label': 'Network adapter ' ~ ((node_network_adapters | length) + 1)
+      }] }}
+  loop: "{{ node_nic_order }}"
+  when:
+    - not node_attempt_failed | bool
+    - node[item] is defined
+    - node[item] | string | length > 0
+
+- name: "Build OVA network mapping"
+  ansible.builtin.set_fact:
+    ovf_networks: >-
+      {{ {'VM Network': (node_network_adapters | first).network}
+         | combine(dict(node_network_adapters | map(attribute='key') | zip(node_network_adapters | map(attribute='network')))) }}
+  when: not node_attempt_failed | bool
+
+- name: "Deploy ESXi OVA/OVF"
+  when: not node_attempt_failed | bool
+  block:
+    - name: "Deploy ESXi OVA/OVF {{ node.vmname }}"
+      community.vmware.vmware_deploy_ovf:
+        hostname: "{{ node.platform_address }}"
+        username: "{{ node.platform_username }}"
+        password: "{{ node.platform_password }}"
+        datacenter: ha-datacenter
+        datastore: "{{ node.datastore }}"
+        name: "{{ node.vmname }}"
+        ovf: "{{ node.ovf }}"
+        networks: "{{ ovf_networks }}"
+        power_on: false
+        wait_for_ip_address: false
+        validate_certs: false
+      delegate_to: localhost
+
+  rescue:
+    - name: "Record OVA deployment failure"
+      ansible.builtin.set_fact:
+        node_attempt_failed: true
+        node_attempt_error: "OVA deployment failed: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
+
+- name: "Configure ESXi VM NICs"
+  when: not node_attempt_failed | bool
+  block:
+    - name: "Ensure NIC {{ item.label }} maps {{ item.key }} to {{ item.network }}"
+      community.vmware.vmware_guest_network:
+        hostname: "{{ node.platform_address }}"
+        username: "{{ node.platform_username }}"
+        password: "{{ node.platform_password }}"
+        datacenter: ha-datacenter
+        name: "{{ node.vmname }}"
+        label: "{{ item.label }}"
+        network_name: "{{ item.network }}"
+        state: present
+        device_type: vmxnet3
+        connected: true
+        start_connected: true
+        validate_certs: false
+        force: true
+      loop: "{{ node_network_adapters }}"
+      loop_control:
+        label: "{{ item.label }} -> {{ item.network }}"
+      delegate_to: localhost
+
+  rescue:
+    - name: "Record NIC configuration failure"
+      ansible.builtin.set_fact:
+        node_attempt_failed: true
+        node_attempt_error: "NIC configuration failed: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
+
+- name: "Power-ON the VM"
+  when: not node_attempt_failed | bool
+  block:
+    - name: "Power on ESXi VM {{ node.vmname }}"
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ node.platform_address }}"
+        username: "{{ node.platform_username }}"
+        password: "{{ node.platform_password }}"
+        datacenter: ha-datacenter
+        name: "{{ node.vmname }}"
+        state: powered-on
+        validate_certs: false
+      register: node_start_result
+      delegate_to: localhost
+
+  rescue:
+    - name: "Record VM start failure"
+      ansible.builtin.set_fact:
+        node_attempt_failed: true
+        node_attempt_error: "VM power-on failed: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
+
+- name: "Wait 2 mins before starting console bootstrap check"
+  ansible.builtin.pause:
+    seconds: 120
+  when: not node_attempt_failed | bool
+
+- name: "Wait for console prompt before console bootstrap"
+  ansible.builtin.include_tasks:
+    file: wait_for_console_prompt.yml
+  when: not node_attempt_failed | bool
+
+- name: "Console bootstrap {{ node.hostname | default(node.vmname) }}"
+  ansible.builtin.include_tasks:
+    file: console_bootstrap.yml
+  when: not node_attempt_failed | bool
+
+- name: "Post-bootstrap configuration {{ node.hostname | default(node.vmname) }}"
+  when: not node_attempt_failed | bool
+  block:
+    - name: "Run post-bootstrap configuration"
+      ansible.builtin.include_tasks:
+        file: post_bootstrap_configuration.yml
+
+  rescue:
+    - name: "Record post-bootstrap configuration failure"
+      ansible.builtin.set_fact:
+        node_attempt_failed: true
+        node_attempt_error: "post-bootstrap configuration failed: {{ ansible_failed_task.name | default('unknown task') }}: {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}"
+
+- name: "Clean up failed deployment attempt"
+  ansible.builtin.include_tasks:
+    file: cleanup_node.yml
+  vars:
+    cleanup_node: "{{ node }}"
+  when: node_attempt_failed | bool
+
+- name: "Record deployment attempt result"
+  ansible.builtin.set_fact:
+    node_deploy_succeeded: "{{ not node_attempt_failed | bool }}"
+    node_deploy_last_error: "{{ node_attempt_error }}"

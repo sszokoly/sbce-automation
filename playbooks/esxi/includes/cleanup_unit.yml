@@ -1,0 +1,8 @@
+---
+- name: "Clean up SBCE unit VM node"
+  ansible.builtin.include_tasks:
+    file: cleanup_node.yml
+  loop: "{{ sbce_unit.nodes }}"
+  loop_control:
+    loop_var: cleanup_node
+    label: "{{ cleanup_node.hostname | default(cleanup_node.vmname) }}"

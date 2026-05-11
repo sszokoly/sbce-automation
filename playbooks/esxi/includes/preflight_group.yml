@@ -1,0 +1,15 @@
+---
+- name: "Build preflight node list"
+  ansible.builtin.set_fact:
+    preflight_nodes: >-
+      {{ [preflight_group.primary]
+         + (preflight_group.secondary_ems | default([]))
+         + (preflight_group.sbce_units | default([]) | map(attribute='nodes') | flatten) }}
+
+- name: "Preflight node"
+  ansible.builtin.include_tasks:
+    file: preflight_node.yml
+  loop: "{{ preflight_nodes }}"
+  loop_control:
+    loop_var: preflight_node
+    label: "{{ preflight_node.hostname | default(preflight_node.vmname) }}"

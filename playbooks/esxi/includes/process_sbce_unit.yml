@@ -1,0 +1,10 @@
+---
+- name: "Deploy SBCE VM node"
+  ansible.builtin.include_tasks:
+    file: deploy_node.yml
+  loop: "{{ sbce_unit.nodes }}"
+  loop_control:
+    loop_var: node
+    label: "{{ node.hostname | default(node.vmname) }}"
+  vars:
+    group_primary: "{{ ems_node }}"

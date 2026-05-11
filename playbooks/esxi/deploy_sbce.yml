@@ -1,0 +1,94 @@
+---
+- hosts: localhost
+  gather_facts: false
+
+  vars:
+    execution_dir: "{{ lookup('ansible.builtin.env', 'PWD') }}"
+    sleep_time: 2
+    vm_deploy_retries: 3
+    sbce_installable_deploy_attempts: 3
+    sbce_installable_timeout: 600
+    sbce_installable_poll_interval: 30
+    sbce_boot_wait: 120
+    console_prompt_check: auto
+    target_sheets: ""
+
+  tasks:
+    - name: "Fail if 'src' file argument is not in --extra-vars"
+      ansible.builtin.fail:
+        msg: "'src' argument is missing"
+      when: src is not defined
+      changed_when: false
+      tags: [always]
+
+    - name: "Expand 'src' to 'src_path'"
+      ansible.builtin.set_fact:
+        src_path: >-
+          {{ src if src.startswith('/')
+             else (execution_dir ~ '/' ~ src) | realpath }}
+      tags: [always]
+
+    - name: "Verify 'src_path' exists"
+      ansible.builtin.stat:
+        path: "{{ src_path }}"
+      register: src_stat_result
+      failed_when: not src_stat_result.stat.exists
+      tags: [always]
+
+    - name: "Check if tesseract is available on controller"
+      command: which tesseract
+      register: which_result
+      changed_when: false
+      failed_when: false
+      tags: [always]
+
+    - name: "Set has_tesseract fact"
+      set_fact:
+        has_tesseract: "{{ which_result.rc == 0 }}"
+      tags: [always]
+
+    - name: "Build and validate topology"
+      ansible.builtin.command:
+        argv:
+          - "{{ ansible_playbook_python }}"
+          - "{{ execution_dir }}/scripts/validate.py"
+          - "{{ src_path }}"
+          - "--target-sheets"
+          - "{{ target_sheets | default('') }}"
+      register: topology_result
+      changed_when: false
+      tags: [always]
+
+    - name: "Parse topology JSON"
+      ansible.builtin.set_fact:
+        topology: "{{ topology_result.stdout | from_json }}"
+      tags: [always]
+
+    - name: "Fail if topology platform is not ESXI"
+      ansible.builtin.fail:
+        msg: "Workbook platform_type must be ESXI for this playbook, got {{ topology.platform }}"
+      when: topology.platform != "ESXI"
+      changed_when: false
+      tags: [always]
+
+    - name: "Debug topology"
+      ansible.builtin.debug:
+        var: topology
+
+    - name: "Show selected EMS groups"
+      ansible.builtin.debug:
+        msg: |-
+          Selected {{ topology.groups | length }} EMS group(s):
+          {% for group in topology.groups %}
+          - {{ group.primary_sheet }} [{% for unit in group.sbce_units %}[{{ unit.sheets | join(', ') }}]{% if not loop.last %}, {% endif %}{% endfor %}]{% if group.secondary_ems | length > 0 %} {{ group.secondary_ems | map(attribute='_sheet') | join(' ') }}{% endif %}
+          {% endfor %}
+      tags: [always]
+
+    - name: "Process EMS groups sequentially"
+      ansible.builtin.include_tasks:
+        file: includes/process_group.yml
+      loop: "{{ topology.groups }}"
+      loop_control:
+        loop_var: current_group
+        label: "{{ current_group.primary.hostname | default(current_group.primary.vmname) }}"
+      tags: [step01]

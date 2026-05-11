@@ -1,0 +1,165 @@
+- name: "Add {{ node.hostname | default(node.vmname) }} to in-memory inventory"
+  ansible.builtin.add_host:
+    hostname: "{{ node.hostname | default(node.vmname) }}"
+    ansible_host: "{{ node.ip0 }}"
+    ansible_user: ipcs
+    ansible_password: "{{ node.ipcspass }}"
+    ansible_become_user: root
+    ansible_become_password: "{{ node.rootpass }}"
+    ansible_become_method: su
+    ansible_port: 22
+    ansible_timeout: 30
+    ansible_python_interpreter: /usr/libexec/platform-python
+
+- name: "Wait for {{ node.hostname | default(node.vmname) }} SSH to become available"
+  ansible.builtin.wait_for_connection:
+    delay: 30
+    timeout: 600
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
+
+- name: "Pause another 60 secs"
+  ansible.builtin.pause:
+    seconds: 60
+
+- name: "Update timezone"
+  become: yes
+  ansible.builtin.shell: "timedatectl set-timezone {{ node.timezone }}"
+  when: node.timezone | default('', true) | length > 0
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
+
+- name: "Update NTP server"
+  become: yes
+  ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ node.ntpserver }}"
+  when: node.ntpserver is defined and node.ntpserver  | length > 0
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
+
+- name: "Disable password aging for 'ipcs' user"
+  become: yes
+  ansible.builtin.shell: "chage -E -1 -m 0 -M 99999 ipcs"
+  delegate_to: "{{ node.hostname | default(node.vmname) }}"
+
+- name: "Authorize Secure Boot certificate"
+  when: node.apptype == "SBCE" or node.apptype == "EMS+SBCE"
+  block:
+    - name: "Import certificate"
+      become: yes
+      ansible.builtin.command:
+        argv:
+          - mokutil
+          - --import
+          - asbc_custom_secure_boot_cert.cer
+      args:
+        chdir: /usr/local/ipcs/etc/cert/signatures/
+        stdin: |
+          {{ node.rootpass }}
+          {{ node.rootpass }}
+      no_log: true
+      delegate_to: "{{ node.hostname | default(node.vmname) }}"
+
+    - name: "Reboot SBCE"
+      ansible.builtin.command: /sbin/reboot
+      become: yes
+      delegate_to: "{{ node.hostname | default(node.vmname) }}"
+      async: 1
+      poll: 0
+      failed_when: false
+
+    - name: "Wait 8 secs for the blue MOK screen to show up"
+      ansible.builtin.pause:
+        seconds: 8
+
+    - name: "Set up 'sendkey_base' macro"
+      community.vmware.vmware_guest_sendkey: &sendkey_base
+        hostname: "{{ node.platform_address }}"
+        username: "{{ node.platform_username }}"
+        password: "{{ node.platform_password }}"
+        name: "{{ node.vmname }}"
+        validate_certs: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        keys_send:
+          - ENTER
+        sleep_time: 10
+      no_log: true
+      changed_when: false
+
+    - name: Send DOWN key to select 'Enroll MOK'
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        keys_send:
+          - DOWNARROW
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Send DOWN key to select 'Continue'
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        keys_send:
+          - DOWNARROW
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Send DOWN key to select 'Yes'
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        keys_send:
+          - DOWNARROW
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        name: "{{ node.vmname }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: "Enter enrollment password"
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        name: "{{ node.vmname }}"
+        string_send: "{{ node.rootpass }}"
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        name: "{{ node.vmname }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Send ENTER
+      community.vmware.vmware_guest_sendkey:
+        <<: *sendkey_base
+        name: "{{ node.vmname }}"
+        keys_send:
+          - ENTER
+        sleep_time: "{{ sleep_time }}"
+      changed_when: false
+
+    - name: Wait for SBCE SSH after MOK enrollment reboot
+      ansible.builtin.wait_for_connection:
+        delay: 10
+        timeout: 300
+      delegate_to: "{{ node.hostname | default(node.vmname) }}"

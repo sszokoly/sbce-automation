@@ -1,0 +1,12 @@
+---
+- name: "Delete ESXi VM {{ cleanup_node.vmname }}"
+  community.vmware.vmware_guest:
+    hostname: "{{ cleanup_node.platform_address }}"
+    username: "{{ cleanup_node.platform_username }}"
+    password: "{{ cleanup_node.platform_password }}"
+    datacenter: ha-datacenter
+    name: "{{ cleanup_node.vmname }}"
+    state: absent
+    force: true
+    validate_certs: false
+  delegate_to: localhost

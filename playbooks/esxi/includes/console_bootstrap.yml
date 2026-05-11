@@ -1,0 +1,555 @@
+---
+- name: "Console bootstrap notice"
+  ansible.builtin.debug:
+    msg: >-
+      Running ESXI console bootstrap for {{ node.hostname | default(node.vmname) }}.
+      console_prompt_check={{ console_prompt_check }}; auto mode may fall back to fixed waits.
+
+- name: "Set up 'sendkey_base' macro"
+  community.vmware.vmware_guest_sendkey: &sendkey_base
+    hostname: "{{ node.platform_address }}"
+    username: "{{ node.platform_username }}"
+    password: "{{ node.platform_password }}"
+    name: "{{ node.vmname }}"
+    validate_certs: false
+
+- name: "Enter your choice [1 - 4] : 1"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "1"
+
+- name: Send ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 10
+  no_log: true
+  changed_when: false
+
+- name: "IP Mode: {{ node.ipmode }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    name: "{{ node.vmname }}"
+    string_send: "{{ node.ipmode }}"
+  when:
+    - node.ipmode is defined
+    - node.ipmode is not none
+    - node.ipmode | string | lower != "null"
+    - node.ipmode | string | length > 0
+
+- name: Send ipmode ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Appliance Type: {{ node.apptype }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.apptype }}"
+  when: node.apptype is defined and (node.apptype | string | length) > 0
+
+- name: Send apptype ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Network Passphrase: {{ node.nwpass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.nwpass }}"
+  when:
+    - node.apptype in ['EMS', 'SBCE']
+    - node.nwpass
+
+- name: Send nwpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: Set appliance_name # this appname cannot be the same as here during SBCE install
+  ansible.builtin.set_fact:
+    appliance_name: >-
+      {{ node.appname if node.apptype == 'EMS' else node.vmname }}
+  when:
+    - node.appname is defined and (node.appname | string | length) > 0
+    - node.vmname is defined and (node.vmname | string | length) > 0
+
+- name: "Appliance Name: {{ appliance_name }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ appliance_name }}"
+  when: appliance_name is defined and (appliance_name | string | length) > 0
+
+- name: Send appname ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Installation Type: {{ node.ems_inst_type }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ems_inst_type }}"
+  when:
+    - node.apptype == 'EMS'
+    - node.ems_inst_type
+
+- name: Send ems_inst_type ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+  when:
+    - node.apptype == 'EMS'
+    - node.ems_inst_type
+
+- name: "Management IP address: {{ node.ip0 }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ip0 }}"
+  when: node.ip0 is defined and (node.ip0 | string | length) > 0
+
+- name: Send ip0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management subnet mask: {{ node.netmask0 }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.netmask0 }}"
+  when: node.netmask0 is defined and (node.netmask0 | string | length) > 0
+
+- name: Send netmask0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management Gateway IP address (ipv4): {{ node.gateway }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.gateway }}"
+  when: node.gateway is defined and (node.gateway | string | length) > 0
+
+- name: Send gateway ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management IP address (ipv6): {{ node.ipv6address0 }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ipv6address0 }}"
+  when: node.ipv6address0 is defined and (node.ipv6address0 | string | length) > 0
+
+- name: Send ipv6address0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management subnet network prefix length: {{ node.ipv6prefix0 }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ipv6prefix0 }}"
+  when: node.ipv6prefix0 is defined and (node.ipv6prefix0 | string | length) > 0
+
+- name: Send ipv6prefix0 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Management Gateway IP Address (ipv6): {{ node.ipv6gateway }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ipv6gateway }}"
+  when: node.ipv6gateway is defined and (node.ipv6gateway | string | length) > 0
+
+- name: Send ipv6gateway ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "EMS IP address (ipv4): {{ node.emsip }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.emsip }}"
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+    - node.emsip is defined and (node.emsip | string | length) > 0
+
+- name: Send emsip ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+
+- name: "EMS IP address (ipv6): {{ node.emsip_v6 }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.emsip_v6 }}"
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+    - node.emsip_v6 is defined and (node.emsip_v6 | string | length) > 0
+
+- name: Send emsip_v6 ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+  when:
+    - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
+
+- name: "NTP Server IP Address (ipv4): ENTER"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+
+- name: "NTP Server IP Address (ipv6): ENTER"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+
+- name: "List of DNS Servers: {{ node.dns }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.dns }}"
+  when: node.dns is defined and (node.dns | string | length) > 0
+
+- name: Send dns ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Domain Suffix: {{ node.domain_suffix }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.domain_suffix }}"
+  when: node.domain_suffix is defined and (node.domain_suffix | string | length) > 0
+
+- name: Send domain_suffix ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "Y"
+    sleep_time: "{{ sleep_time }}"
+
+- name: Send confirmation ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "First and Last Name: {{ node.first_last_name }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.first_last_name }}"
+  when: node.first_last_name is defined and (node.first_last_name | string | length) > 0
+
+- name: Send first_last_name ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Organizational Unit: {{ node.organizational_unit }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.organizational_unit }}"
+  when: node.organizational_unit is defined and (node.organizational_unit | string | length) > 0
+
+- name: Send organizational_unit ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Organization: {{ node.organization }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.organization }}"
+  when: node.organization is defined and (node.organization | string | length) > 0
+
+- name: Send organization ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "City or Locality: {{ node.locality }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.locality }}"
+  when: node.locality is defined and (node.locality | string | length) > 0
+
+- name: Send locality ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "State or Province: {{ node.state_province }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.state_province }}"
+  when: node.state_province is defined and (node.state_province | string | length) > 0
+
+- name: Send state_province ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Country Code ( 2 letter code ): {{ node.country }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.country }}"
+  when: node.country is defined and (node.country | string | length) > 0
+
+- name: Send country ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Enter 'Y' if the above infirmation is correct: Y"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "Y"
+    sleep_time: "{{ sleep_time }}"
+
+- name: Send confirmation ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Please select a continent or ocean (11 = none): 11"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "11"
+
+- name: Confirm continent (default Yes)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Please enter the desired value of the TZ environment variable: GMT-4"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "GMT-4"
+
+- name: Confirm timezone (default Yes)
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Is the above information OK? (1 Yes, 2 No): 1"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "1"
+
+- name: Send ENTER and wait 90 seconds
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: 90
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'root' user: {{ node.rootpass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.rootpass }}"
+  when: node.rootpass is defined and (node.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'root' user: {{ node.rootpass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.rootpass }}"
+  when: node.rootpass is defined and (node.rootpass | string | length) > 0
+  no_log: true
+
+- name: Send rootpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'ipcs' user: {{ node.ipcspass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ipcspass }}"
+  when: node.ipcspass is defined and (node.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'ipcs' user: {{ node.ipcspass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.ipcspass }}"
+  when: node.ipcspass is defined and (node.ipcspass | string | length) > 0
+  no_log: true
+
+- name: Send ipcspass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "New Password for 'grub' user: {{ node.grubpass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.grubpass }}"
+  when: node.grubpass is defined and (node.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false
+
+- name: "Retype new password for 'grub' user: {{ node.grubpass }}"
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    string_send: "{{ node.grubpass }}"
+  when: node.grubpass is defined and (node.grubpass | string | length) > 0
+  no_log: true
+
+- name: Send grubpass ENTER
+  community.vmware.vmware_guest_sendkey:
+    <<: *sendkey_base
+    keys_send:
+      - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
+  changed_when: false

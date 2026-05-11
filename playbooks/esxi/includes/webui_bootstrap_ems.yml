@@ -1,0 +1,34 @@
+---
+- name: "Wait for EMS Web UI {{ ems_node.hostname | default(ems_node.vmname) }}"
+  ansible.builtin.uri:
+    url: "https://{{ ems_node.ip0 }}/sbc/"
+    method: GET
+    validate_certs: false
+    return_content: false
+    timeout: 5
+  register: ems_webui_probe
+  failed_when: false
+  until: ems_webui_probe.status | default(0) == 200
+  retries: 30
+  delay: 10
+  delegate_to: localhost
+
+- name: "Accept EMS EULA"
+  sbce_web_bootstrap:
+    argv:
+      - --eula
+      - --host
+      - "{{ ems_node.ip0 }}"
+      - --debug
+  delegate_to: localhost
+
+- name: "Change EMS ucsec password"
+  sbce_web_bootstrap:
+    argv:
+      - --change-password
+      - --host
+      - "{{ ems_node.ip0 }}"
+      - --ucsec-password
+      - "{{ ems_node.ucsecpass }}"
+      - --debug
+  delegate_to: localhost

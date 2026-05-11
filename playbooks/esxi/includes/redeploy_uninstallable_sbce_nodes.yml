@@ -1,0 +1,24 @@
+---
+- name: "Build non-installable SBCE node list"
+  ansible.builtin.set_fact:
+    sbce_redeploy_nodes: >-
+      {{ ([] if (sbce_unit_primary_installable | bool) else [sbce_unit.nodes[0]])
+         + ([sbce_unit.nodes[1]] if sbce_unit.type == 'ha' and not (sbce_unit_secondary_installable | bool) else []) }}
+
+- name: "Clean up non-installable SBCE node"
+  ansible.builtin.include_tasks:
+    file: cleanup_node.yml
+  loop: "{{ sbce_redeploy_nodes }}"
+  loop_control:
+    loop_var: cleanup_node
+    label: "{{ cleanup_node.hostname | default(cleanup_node.vmname) }}"
+
+- name: "Redeploy non-installable SBCE node"
+  ansible.builtin.include_tasks:
+    file: deploy_node.yml
+  loop: "{{ sbce_redeploy_nodes }}"
+  loop_control:
+    loop_var: node
+    label: "{{ node.hostname | default(node.vmname) }}"
+  vars:
+    group_primary: "{{ ems_node }}"

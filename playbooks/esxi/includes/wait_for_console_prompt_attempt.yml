@@ -1,0 +1,55 @@
+---
+- name: "Prepare console prompt OCR attempt"
+  ansible.builtin.set_fact:
+    console_prompt_local_screenshot: "{{ execution_dir }}/data/screenshots/{{ node.vmname }}-console-attempt-{{ deploy_attempt }}-{{ console_prompt_attempt }}.png"
+  when:
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool
+
+- name: "Capture ESXi VM console screenshot"
+  esxi_console_screenshot:
+    hostname: "{{ node.platform_address }}"
+    username: "{{ node.platform_username }}"
+    password: "{{ node.platform_password }}"
+    validate_certs: false
+    name: "{{ node.vmname }}"
+    path: "{{ console_prompt_local_screenshot }}"
+    autodelete: true
+  delegate_to: localhost
+  register: console_prompt_screenshot
+  failed_when: false
+  when:
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool
+
+- name: "Convert VM console screenshot to text"
+  ansible.builtin.command:
+    argv:
+      - tesseract
+      - "{{ console_prompt_local_screenshot }}"
+      - stdout
+  delegate_to: localhost
+  become: false
+  register: console_prompt_ocr
+  changed_when: false
+  failed_when: false
+  when:
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool
+    - not console_prompt_screenshot.failed | default(false)
+
+- name: "Record console prompt readiness"
+  ansible.builtin.set_fact:
+    console_prompt_ready: "{{ 'Enter your choice' in (console_prompt_ocr.stdout | default('')) }}"
+  when:
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool
+    - console_prompt_ocr is defined
+
+- name: "Wait before next console prompt OCR attempt"
+  ansible.builtin.pause:
+    seconds: 30
+  when:
+    - not node_attempt_failed | bool
+    - not console_prompt_ready | bool
+    - console_prompt_attempt | int < 11

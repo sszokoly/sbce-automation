@@ -1,0 +1,37 @@
+---
+- name: "Find existing ESXi VM for preflight"
+  community.vmware.vmware_guest_find:
+    hostname: "{{ preflight_node.platform_address }}"
+    username: "{{ preflight_node.platform_username }}"
+    password: "{{ preflight_node.platform_password }}"
+    name: "{{ preflight_node.vmname }}"
+    validate_certs: false
+  delegate_to: localhost
+  register: preflight_vm_find
+  changed_when: false
+  failed_when:
+    - preflight_vm_find.failed | default(false)
+    - "'Unable to find folders for virtual machine' not in (preflight_vm_find.msg | default(''))"
+
+- name: "Fail when ESXi VM already exists"
+  ansible.builtin.fail:
+    msg: "VM {{ preflight_node.vmname }} already exists"
+  when: preflight_vm_find.folders | default([]) | length > 0
+
+- name: "Check whether IP is already in use"
+  ansible.builtin.command:
+    argv:
+      - ping
+      - "{{ preflight_node.ip0 }}"
+      - -c
+      - "1"
+      - -w
+      - "1"
+  register: preflight_ping
+  changed_when: false
+  failed_when: false
+
+- name: "Fail when VM IP is already in use"
+  ansible.builtin.fail:
+    msg: "VM IP {{ preflight_node.ip0 }} already in use"
+  when: preflight_ping.rc == 0
