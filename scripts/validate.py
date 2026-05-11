@@ -221,7 +221,7 @@ class SbceSheet(BaseModel):
     state_province: str = ""
     country: str = ""
     timezone: str = ""
-    ntpservers: str = ""
+    ntpserver: str = ""
     ntpipv6: str = ""
     dns: str = ""
     emsip: str = ""
@@ -307,12 +307,8 @@ class SbceSheet(BaseModel):
 
         validate_timezone("timezone", require_string("timezone", self.timezone))
 
-        if self.ntpservers:
-            items = split_list(self.ntpservers)
-            if not items:
-                fail("'ntpservers' must be a valid IPv4 address or FQDN")
-            for item in items:
-                validate_ipv4_or_fqdn("ntpservers", item)
+        if self.ntpserver:
+            validate_ipv4_or_fqdn("ntpserver", self.ntpserver)
         if self.ntpipv6:
             validate_ipv6("ntpipv6", self.ntpipv6)
         validate_ipv4("dns", require_string("dns", self.dns))

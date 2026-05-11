@@ -234,7 +234,6 @@
   changed_when: false
   when:
     - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
-    - node.emsip is defined and (node.emsip | string | length) > 0
 
 - name: "EMS IP address (ipv6): {{ node.emsip_v6 }}"
   kvm_guest_sendkey:
@@ -255,19 +254,22 @@
   changed_when: false
   when:
     - node.apptype == 'SBCE' or (node.apptype == 'EMS' and node.ems_inst_type == 'secondary')
-    - node.emsip_v6 is defined and (node.emsip_v6 | string | length) > 0
 
-- name: "NTP Server IP Address (ipv4): 127.127.1.0"
+- name: "NTP Server IP Address (ipv4): ENTER"
   kvm_guest_sendkey:
     name: "{{ node.vmname }}"
     keys_send:
       - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
 
-- name: "NTP Server IP Address (ipv6):"
+- name: "NTP Server IP Address (ipv6): ENTER"
   kvm_guest_sendkey:
     name: "{{ node.vmname }}"
     keys_send:
       - ENTER
+    sleep_time: "{{ sleep_time }}"
+  no_log: true
 
 - name: "List of DNS Servers: {{ node.dns }}"
   kvm_guest_sendkey:

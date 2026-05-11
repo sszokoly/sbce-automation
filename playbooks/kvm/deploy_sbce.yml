@@ -8,7 +8,7 @@
     vm_deploy_retries: 3
     sbce_installable_deploy_attempts: 3
     sbce_installable_timeout: 600
-    sbce_installable_poll_interval: 60
+    sbce_installable_poll_interval: 30
     sbce_boot_wait: 120
     console_prompt_check: auto
     target_sheets: ""
@@ -51,7 +51,7 @@
       ansible.builtin.command:
         argv:
           - "{{ ansible_playbook_python }}"
-          - "{{ execution_dir }}/scripts/validate_and_build_topology.py"
+          - "{{ execution_dir }}/scripts/validate.py"
           - "{{ src_path }}"
           - "--target-sheets"
           - "{{ target_sheets | default('') }}"
@@ -77,11 +77,11 @@
           {% endfor %}
       tags: [always]
 
-    # - name: "Process EMS groups sequentially"
-    #   ansible.builtin.include_tasks:
-    #     file: includes/process_group.yml
-    #   loop: "{{ topology.groups }}"
-    #   loop_control:
-    #     loop_var: current_group
-    #     label: "{{ current_group.primary.hostname | default(current_group.primary.vmname) }}"
-    #   tags: [step01]
+    - name: "Process EMS groups sequentially"
+      ansible.builtin.include_tasks:
+        file: includes/process_group.yml
+      loop: "{{ topology.groups }}"
+      loop_control:
+        loop_var: current_group
+        label: "{{ current_group.primary.hostname | default(current_group.primary.vmname) }}"
+      tags: [step01]

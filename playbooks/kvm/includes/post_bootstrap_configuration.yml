@@ -27,16 +27,10 @@
   when: node.timezone | default('', true) | length > 0
   delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
-- name: "Extract 1st NTP server"
-  ansible.builtin.set_fact:
-    ntpserver: "{{ (node.ntpservers | default('', true)).split(',') | first }}"
-  when: node.ntpservers | default('', true) | length > 0
-  delegate_to: "{{ node.hostname | default(node.vmname) }}"
-
 - name: "Update NTP server"
   become: yes
-  ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ ntpserver }}"
-  when: ntpserver is defined and ntpserver | length > 0
+  ansible.builtin.shell: "sbceconfigurator.py change-ntp-ip {{ node.ntpserver }}"
+  when: node.ntpserver is defined and node.ntpserver  | length > 0
   delegate_to: "{{ node.hostname | default(node.vmname) }}"
 
 - name: "Disable password aging for 'ipcs' user"
