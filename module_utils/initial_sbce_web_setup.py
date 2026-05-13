@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
@@ -23,6 +24,8 @@ chrome_options.add_argument('--ignore-certificate-errors')
 chrome_options.add_argument('--ignore-ssl-errors')
 chrome_options.add_argument('--headless=new')
 chrome_options.add_argument('--window-size=1920,1080')
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
 
 WAIT_TIMEOUT = 5
 
@@ -445,7 +448,7 @@ def add_node(
     WebDriverWait(driver, WAIT_TIMEOUT).until(EC.staleness_of(finish_button))
 
 
-def do_eula(host: str) -> int:
+def do_eula(host: str) -> int:   
     driver = webdriver.Chrome(options=chrome_options)
     try:
         driver.get(f"https://{host}/sbc/")
@@ -735,22 +738,22 @@ def _require(args: argparse.Namespace, *names: str) -> None:
 
 
 if __name__ == "__main__":
-    #sys.argv += ["--eula", "--host", "10.10.10.10", "--debug"]
+    sys.argv += ["--eula", "--host", "10.10.48.10", "--debug"]
     #sys.argv += ["--change-password", "--host", "10.10.10.10", "--ucsec-password", "cmb@Dm1n", "--debug"]
-    sys.argv += [
-        "--install-sbce",
-        "--host",           "10.10.10.10",
-        "--ucsec-password", "sbc10_cmb@Dm1n",
-        "--temp-appname",   "sbce1",
-        "--appname",        "sbceapp",
-        "--dns",            "10.10.10.1",
-        "--sig-iface",      "A1",
-        "--sig-name",       "A1_sig",
-        "--sig-mask",       "255.255.255.0",
-        "--sig-gw",         "10.10.11.1",
-        "--sig-ip",         "10.10.11.10",
-        "--debug"
-    ]
+    # sys.argv += [
+    #     "--install-sbce",
+    #     "--host",           "10.10.10.10",
+    #     "--ucsec-password", "sbc10_cmb@Dm1n",
+    #     "--temp-appname",   "sbce1",
+    #     "--appname",        "sbceapp",
+    #     "--dns",            "10.10.10.1",
+    #     "--sig-iface",      "A1",
+    #     "--sig-name",       "A1_sig",
+    #     "--sig-mask",       "255.255.255.0",
+    #     "--sig-gw",         "10.10.11.1",
+    #     "--sig-ip",         "10.10.11.10",
+    #     "--debug"
+    # ]
 
     # sys.argv += [
     #     "--add-node",

@@ -303,7 +303,7 @@
   no_log: true
   changed_when: false
 
-- name: "Enter 'Y' if the above infirmation is correct: Y"
+- name: "Enter 'Y' if the above confirmation is correct: Y"
   kvm_guest_sendkey:
     name: "{{ node.vmname }}"
     string_send: "Y"
@@ -415,7 +415,7 @@
   no_log: true
   changed_when: false
 
-- name: "Enter 'Y' if the above infirmation is correct: Y"
+- name: "Enter 'Y' if the above confirmation is correct: Y"
   kvm_guest_sendkey:
     name: "{{ node.vmname }}"
     string_send: "Y"

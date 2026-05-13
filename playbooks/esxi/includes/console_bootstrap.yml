@@ -296,7 +296,7 @@
   no_log: true
   changed_when: false
 
-- name: "Enter 'Y' if the above infirmation is correct: Y"
+- name: "Enter 'Y' if the above confirmation is correct: Y"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "Y"
@@ -401,7 +401,7 @@
   no_log: true
   changed_when: false
 
-- name: "Enter 'Y' if the above infirmation is correct: Y"
+- name: "Enter 'Y' if the above confirmation is correct: Y"
   community.vmware.vmware_guest_sendkey:
     <<: *sendkey_base
     string_send: "Y"
