@@ -294,11 +294,11 @@ class SbceSheet(BaseModel):
             validate_ipv6("ipv6gateway", self.ipv6gateway)
 
         validate_domain_suffix("domain_suffix", require_string("domain_suffix", self.domain_suffix))
-        expected_fln = f"{self.hostname}.{self.domain_suffix}"
-        if require_string("first_last_name", self.first_last_name) != expected_fln:
-            fail(f"'first_last_name' must be '{expected_fln}'")
 
         if self.apptype != "SBCE":
+            expected_fln = f"{self.hostname}.{self.domain_suffix}"
+            if require_string("first_last_name", self.first_last_name) != expected_fln:
+                fail(f"'first_last_name' must be '{expected_fln}'")
             require_string("organizational_unit", self.organizational_unit)
             require_string("organization", self.organization)
             require_string("locality", self.locality)
