@@ -738,20 +738,20 @@ def _require(args: argparse.Namespace, *names: str) -> None:
 
 
 if __name__ == "__main__":
-    sys.argv += ["--eula", "--host", "10.10.48.10", "--debug"]
+    #sys.argv += ["--eula", "--host", "10.10.48.10", "--debug"]
     #sys.argv += ["--change-password", "--host", "10.10.10.10", "--ucsec-password", "cmb@Dm1n", "--debug"]
     # sys.argv += [
     #     "--install-sbce",
-    #     "--host",           "10.10.10.10",
+    #     "--host",           "10.10.48.10",
     #     "--ucsec-password", "sbc10_cmb@Dm1n",
     #     "--temp-appname",   "sbce1",
-    #     "--appname",        "sbceapp",
-    #     "--dns",            "10.10.10.1",
+    #     "--appname",        "sbcems",
+    #     "--dns",            "10.10.48.192",
     #     "--sig-iface",      "A1",
     #     "--sig-name",       "A1_sig",
     #     "--sig-mask",       "255.255.255.0",
-    #     "--sig-gw",         "10.10.11.1",
-    #     "--sig-ip",         "10.10.11.10",
+    #     "--sig-gw",         "10.10.48.254",
+    #     "--sig-ip",         "10.10.48.17",
     #     "--debug"
     # ]
 
