@@ -221,4 +221,5 @@ inventory/*
 facts_cache/*
 launch.json
 .agents/*
+.opencode/*
 playbooks/test/*

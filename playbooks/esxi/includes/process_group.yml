@@ -82,6 +82,23 @@
         group_primary: "{{ current_group.primary }}"
       when: not current_group_failed | bool
 
+    - name: "Add secondary EMS nodes to EMS {{ current_group.primary.hostname }}"
+      ansible.builtin.include_tasks:
+        file: webui_add_unit.yml
+      loop: "{{ current_group.secondary_ems }}"
+      loop_control:
+        loop_var: secondary_ems_node
+        label: "{{ secondary_ems_node.hostname | default(secondary_ems_node.vmname) }}"
+      vars:
+        ems_node: "{{ current_group.primary }}"
+        webui_unit:
+          type: ems
+          sheets:
+            - "{{ secondary_ems_node._sheet | default(secondary_ems_node.hostname | default(secondary_ems_node.vmname)) }}"
+          nodes:
+            - "{{ secondary_ems_node }}"
+      when: not current_group_failed | bool
+
 
   rescue:
     - name: "Record failed EMS group"
