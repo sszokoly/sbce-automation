@@ -8,6 +8,7 @@ Automation of SBCE deployment
 
 ## Call Tree
 
+```
 playbooks/kvm/deploy_sbce.yml
 ├── command: scripts/validate.py
 │   └── builds/validates topology JSON used by later tasks
@@ -54,3 +55,4 @@ playbooks/kvm/deploy_sbce.yml
         └── rescue: includes/cleanup_group.yml
             └── includes/cleanup_node.yml
                 └── loop: primary + secondary_ems + all sbce_unit.nodes
+```
