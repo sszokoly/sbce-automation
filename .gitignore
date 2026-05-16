@@ -224,3 +224,4 @@ launch.json
 .opencode/*
 playbooks/test/*
 spec.md
+skills-lock.json
