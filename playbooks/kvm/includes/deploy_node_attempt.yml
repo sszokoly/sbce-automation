@@ -193,6 +193,7 @@
 - name: "Wait 2 mins before starting console bootstrap check"
   ansible.builtin.pause:
     seconds: 120
+  when: not node_attempt_failed | bool
 
 - name: "Wait for console prompt before console bootstrap"
   ansible.builtin.include_tasks:

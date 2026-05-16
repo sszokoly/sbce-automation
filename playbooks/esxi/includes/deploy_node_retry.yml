@@ -1,6 +1,36 @@
 ---
 - name: "Run deployment attempt {{ deploy_attempt }} for {{ node.hostname | default(node.vmname) }}"
-  ansible.builtin.include_tasks:
-    file: deploy_node_attempt.yml
   when: not node_deploy_succeeded | bool
-...
+  block:
+    - name: "Run deployment attempt tasks"
+      ansible.builtin.include_tasks:
+        file: deploy_node_attempt.yml
+
+  rescue:
+    - name: "Record hard deployment attempt failure"
+      ansible.builtin.set_fact:
+        node_attempt_failed: true
+        node_attempt_error: >-
+          {{ ansible_failed_task.name | default('unknown task') }}:
+          {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}
+
+    - name: "Clean up after hard deployment attempt failure"
+      block:
+        - name: "Clean up failed deployment attempt"
+          ansible.builtin.include_tasks:
+            file: cleanup_node.yml
+          vars:
+            cleanup_node: "{{ node }}"
+
+      rescue:
+        - name: "Record cleanup failure after hard deployment attempt failure"
+          ansible.builtin.set_fact:
+            node_attempt_error: >-
+              {{ node_attempt_error }}; cleanup failed:
+              {{ ansible_failed_task.name | default('unknown task') }}:
+              {{ ansible_failed_result.msg | default(ansible_failed_result.stderr | default('failed')) }}
+
+    - name: "Record hard deployment attempt result"
+      ansible.builtin.set_fact:
+        node_deploy_succeeded: false
+        node_deploy_last_error: "{{ node_attempt_error }}"
