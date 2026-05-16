@@ -29,6 +29,42 @@
     msg: "VM {{ preflight_node.vmname }} already exists"
   when: preflight_node.vmname in preflight_vm_list.stdout_lines
 
+- name: "Initialize required KVM bridge list"
+  ansible.builtin.set_fact:
+    preflight_node_nic_order: "{{ ['M1', 'M2'] if preflight_node.apptype == 'EMS' else ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] }}"
+    preflight_required_networks: []
+
+- name: "Build required KVM bridge list"
+  ansible.builtin.set_fact:
+    preflight_required_networks: >-
+      {{ preflight_required_networks + [{
+        'key': item,
+        'network': preflight_node[item]
+      }] }}
+  loop: "{{ preflight_node_nic_order }}"
+  when: preflight_node[item] | default('', true) | string | length > 0
+
+- name: "Check required KVM bridges"
+  ansible.builtin.stat:
+    path: "/sys/class/net/{{ item.network }}/bridge"
+  delegate_to: kvm_host
+  become: true
+  register: preflight_kvm_bridge_checks
+  loop: "{{ preflight_required_networks }}"
+  loop_control:
+    label: "{{ item.key }} -> {{ item.network }}"
+  changed_when: false
+
+- name: "Fail when required KVM bridge is missing"
+  ansible.builtin.fail:
+    msg: >-
+      KVM bridge '{{ item.item.network }}' required by {{ item.item.key }} for VM
+      {{ preflight_node.vmname }} does not exist on {{ preflight_node.platform_address }}
+  loop: "{{ preflight_kvm_bridge_checks.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.key }} -> {{ item.item.network }}"
+  when: not item.stat.exists | bool
+
 - name: "Check whether IP is already in use"
   ansible.builtin.command:
     argv:

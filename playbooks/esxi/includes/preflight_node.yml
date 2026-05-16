@@ -18,6 +18,57 @@
     msg: "VM {{ preflight_node.vmname }} already exists"
   when: preflight_vm_find.folders | default([]) | length > 0
 
+- name: "Initialize required ESXi port group list"
+  ansible.builtin.set_fact:
+    preflight_node_nic_order: "{{ ['M1', 'M2'] if preflight_node.apptype == 'EMS' else ['M1', 'B1', 'A2', 'B2', 'A1', 'M2'] }}"
+    preflight_required_networks: []
+
+- name: "Build required ESXi port group list"
+  ansible.builtin.set_fact:
+    preflight_required_networks: >-
+      {{ preflight_required_networks + [{
+        'key': item,
+        'network': preflight_node[item]
+      }] }}
+  loop: "{{ preflight_node_nic_order }}"
+  when: preflight_node[item] | default('', true) | string | length > 0
+
+- name: "Gather ESXi port group info"
+  community.vmware.vmware_portgroup_info:
+    hostname: "{{ preflight_node.platform_address }}"
+    username: "{{ preflight_node.platform_username }}"
+    password: "{{ preflight_node.platform_password }}"
+    esxi_hostname: "{{ preflight_node.platform_address }}"
+    validate_certs: false
+  delegate_to: localhost
+  register: preflight_esxi_portgroup_info
+  changed_when: false
+  when: preflight_required_networks | length > 0
+
+- name: "Build existing ESXi port group name list"
+  ansible.builtin.set_fact:
+    preflight_existing_portgroups: >-
+      {{
+        preflight_esxi_portgroup_info.hosts_portgroup_info
+        | default({})
+        | dict2items
+        | map(attribute='value')
+        | flatten
+        | map(attribute='portgroup')
+        | list
+      }}
+  when: preflight_required_networks | length > 0
+
+- name: "Fail when required ESXi port group is missing"
+  ansible.builtin.fail:
+    msg: >-
+      ESXi port group '{{ item.network }}' required by {{ item.key }} for VM
+      {{ preflight_node.vmname }} does not exist on {{ preflight_node.platform_address }}
+  loop: "{{ preflight_required_networks }}"
+  loop_control:
+    label: "{{ item.key }} -> {{ item.network }}"
+  when: item.network not in (preflight_existing_portgroups | default([]))
+
 - name: "Check whether IP is already in use"
   ansible.builtin.command:
     argv:
