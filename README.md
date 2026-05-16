@@ -1,5 +1,5 @@
 # sbce-automation
-Automation of SBCE deployment
+Automation of Avaya SBCE deployment
 
 ## Playbooks
 
