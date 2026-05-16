@@ -223,3 +223,4 @@ launch.json
 .agents/*
 .opencode/*
 playbooks/test/*
+spec.md
